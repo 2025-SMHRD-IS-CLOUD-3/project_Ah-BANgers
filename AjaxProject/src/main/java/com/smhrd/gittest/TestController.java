@@ -18,6 +18,7 @@ public class TestController {
 		
 		System.out.println("코드!!!");
 		
+		System.out.println("안녕!!");
 	}
 	
 		
