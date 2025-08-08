@@ -8,6 +8,8 @@ public class TestController {
 		
 		//B개발자
 		System.out.println("코드 수정");
+		
+		System.out.println("코드 추가!");
 	}
 	
 		
