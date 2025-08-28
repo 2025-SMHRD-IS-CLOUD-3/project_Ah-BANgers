@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>음료 메뉴 선택</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f0f0;
+        }
+        
+        .elderly-guide {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: #333;
+            font-size: 54px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px 40px;
+            border-radius: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 1000px;
+        }
+        
+        .guide-text {
+            margin-bottom: 10px;
+            color: #d32f2f;
+            font-weight: bold;
+        }
+        
+        .guide-subtext {
+            color: #1976d2;
+            font-size: 40px;
+        }
+        
+        .kiosk-container {
+            width: 100% !important; height: 100% !important; background: #FFF9E7; overflow: hidden; border-radius: 0;
+            display: flex; flex-direction: column; justify-content: flex-start; align-items: center;
+            /* 외곽선에 완전히 꽉 차도록 강제 적용 */
+            margin: 0 !important; padding: 0 !important;
+            outline: none; outline-offset: 0; box-shadow: none;
+            /* 외곽선 경계에 딱 맞춤 */
+            min-width: 100%; min-height: 100%;
+            max-width: 100%; max-height: 100%;
+        }
+        
+        .top-section {
+            width: 100%; height: 300px; position: relative; background: #D5DF8A;
+            box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25); overflow: hidden;
+            margin: 0; min-width: 100%;
+        }
+        
+        .step-indicators {
+            padding-left: 5px;
+            padding-right: 5px;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            left: 0px;
+            top: 15px;
+            position: absolute;
+            box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            display: inline-flex;
+        }
+        
+        .step-indicator {
+            width: 350px;
+            height: 250px;
+            background: #D9D9D9;
+            box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 48px;
+            font-weight: 400;
+            color: black;
+            text-align: center;
+        }
+        
+        .step-indicator.active {
+            background: #FF0000;
+            color: white;
+        }
+        
+        .drink-menu {
+            width: 900px;
+            height: 400px;
+            background: #D9D9D9;
+            box-shadow: 0px 4px 5px 15px rgba(0, 0, 0, 0.25);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 120px;
+            font-weight: 400;
+            color: white;
+            position: relative;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .drink-menu:hover {
+            transform: scale(1.02);
+            background: #C0C0C0;
+            box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.35);
+        }
+        
+        .drink-menu:active {
+            transform: scale(0.98);
+        }
+        
+        .drink-menu.ade {
+            background: #FF8C42;
+            border: 5px solid #E67E22;
+        }
+        
+        .drink-menu.smoothie {
+            background: #42A5F5;
+            border: 5px solid #1976D2;
+        }
+        
+        .drink-menu.juice {
+            background: #66BB6A;
+            border: 5px solid #388E3C;
+        }
+        
+        /* 하단 바 - order-type.html과 동일하게 */
+        .bottom-section {
+            flex: 0 0 297px; width: 100%; position: relative; background: #D5DF8A;
+            display: flex; align-items: center; justify-content: center; gap: 5px; overflow: hidden;
+            margin: 0; /* 외곽선에 맞춰 여백 제거 */
+            min-width: 100%; /* 최소 너비 보장 */
+        }
+        .bottom-button { width: 535px; height: 297px; border: none; cursor: pointer; font-size: 60px; font-weight: 700; color: #fff; transition: transform .3s ease; }
+        .bottom-section .bottom-button:first-child { background: linear-gradient(180deg, #304cec 0%, #566ad8 100%); }
+        .bottom-section .bottom-button:nth-child(2) { background: linear-gradient(180deg, #FF6B6B 0%, #D32F2F 100%); }
+        .bottom-button:hover { transform: scale(1.02); }
+        .bottom-button:active { transform: scale(0.98); }
+
+        /* 하단 아이콘 이미지 - order-type.html과 동일하게 */
+        .icon-left, .icon-right { position: absolute; cursor: pointer; transition: transform .2s ease; z-index: 2; }
+        /* 글씨 옆에 보이도록 수평 중앙선 근처로 올림 */
+        .icon-left { width: 110px; height: 110px; left: 18px; top: 50%; bottom: auto; transform: translateY(-50%); }
+        .icon-right { width: 110px; height: 110px; right: 18px; top: 50%; bottom: auto; transform: translateY(-50%); }
+        .icon-img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .icon-left:hover, .icon-right:hover { transform: scale(1.08); }
+        .icon-left:active, .icon-right:active { transform: scale(0.95); }
+        
+        /* 직원호출 모달 스타일 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+        
+        .staff-modal {
+            width: 1000px;
+            height: 800px;
+            background: #FFF9E7;
+            border-radius: 50px;
+            outline: 15px #FF6B6B solid;
+            outline-offset: -15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        .staff-modal-icon {
+            font-size: 120px;
+            margin-bottom: 40px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .staff-modal-title {
+            font-size: 72px;
+            font-weight: bold;
+            margin-bottom: 40px;
+            color: #FF6B6B;
+        }
+        
+        .staff-modal-message {
+            font-size: 48px;
+            margin-bottom: 60px;
+            color: #333;
+            line-height: 1.4;
+        }
+        
+        .staff-modal-btn {
+            padding: 30px 80px;
+            border: none;
+            border-radius: 40px;
+            font-size: 48px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            background: #4CAF50;
+            color: white;
+            min-width: 200px;
+        }
+        
+        .staff-modal-btn:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        
+        .staff-modal-btn:active {
+            transform: scale(0.98);
+        }
+        
+        /* 반응형 디자인 */
+        /* 미디어 쿼리에서 .bottom-button 스타일 제거 - order-type.html과 동일하게 유지 */
+        @media (max-width: 1200px) {
+            .kiosk-container {
+                width: 90vw;
+                height: 90vh;
+                border-radius: 30px;
+            }
+            
+            .drink-menu {
+                width: 80vw;
+                height: 30vh;
+                font-size: 5rem;
+            }
+            
+            .modal {
+                max-width: 90vw;
+                margin: 20px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .kiosk-container {
+                width: 95vw;
+                height: 95vh;
+                border-radius: 20px;
+                gap: 40px;
+            }
+            
+            .drink-menu {
+                width: 90vw;
+                height: 25vh;
+                font-size: 4rem;
+                border-radius: 25px;
+            }
+            
+            .bottom-section {
+                flex-direction: column;
+                height: auto;
+                padding: 20px;
+            }
+            
+            .modal {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="kiosk-frame">
+    <div class="kiosk-container">
+        <!-- 상단 섹션 -->
+        <div class="top-section">
+            <div class="elderly-guide">
+                <div class="guide-text">음료 메뉴를 선택해주세요!</div>
+                <div class="guide-subtext">에이드, 스무디, 과일쥬스 중 선택하세요.</div>
+            </div>
+        </div>
+        
+        <!-- 음료 메뉴 버튼들 -->
+        <div class="drink-menu ade" onclick="showDrinkModal('ade')">에이드(탄산)</div>
+        <div class="drink-menu smoothie" onclick="showDrinkModal('smoothie')">스무디</div>
+        <div class="drink-menu juice" onclick="showDrinkModal('juice')">과일쥬스</div>
+        
+        <!-- 하단 섹션 -->
+        <div class="bottom-section">
+            <button class="bottom-button" onclick="goBack()">뒤로가기</button>
+            <button class="bottom-button" onclick="callStaff()">직원호출</button>
+            
+            <!-- 왼쪽 아이콘 -->
+            <div class="icon-left" onclick="handleIconClick('왼쪽')">
+                <img class="icon-img" src="./img/pngegg (1).png" alt="뒤로가기 아이콘" />
+            </div>
+            
+            <!-- 오른쪽 아이콘 -->
+            <div class="icon-right" onclick="handleIconClick('오른쪽')">
+                <img class="icon-img" src="./img/127164.png" alt="다음 아이콘" />
+            </div>
+        </div>
+    </div>
+
+    <!-- 직원호출 모달 -->
+    <div class="modal-overlay" id="staffModalOverlay">
+        <div class="staff-modal">
+            <div class="staff-modal-icon">🚨</div>
+            <div class="staff-modal-title">직원 호출</div>
+            <div class="staff-modal-message">직원을 호출했습니다.<br/>잠시만 기다려주세요.</div>
+            <button class="staff-modal-btn" onclick="closeStaffModal()">확인</button>
+        </div>
+    </div>
+
+    <!-- TTS 트리거용 숨김 버튼 (직원 호출) -->
+    <button id="help_staff" style="display:none"></button>
+
+    <!-- TTS 스크립트 로드 -->
+    <script src="tts(2차 수정)/tts_2.js"></script>
+
+    <script>
+        // 음료 모달 표시
+        function showDrinkModal(drinkType) {
+            // 각 음료 타입에 맞는 HTML 파일로 이동
+            switch(drinkType) {
+                case 'ade':
+                    window.location.href = 'drink_ade.html';
+                    break;
+                case 'smoothie':
+                    window.location.href = 'drink_smoothie.html';
+                    break;
+                case 'juice':
+                    window.location.href = 'drink_juice.html';
+                    break;
+            }
+        }
+        
+        // 뒤로 가기
+        function goBack() {
+            window.location.href = 'menu-selection.html';
+        }
+        
+        // 직원 호출
+        function callStaff() {
+            // 1) TTS(#help_staff) 먼저 재생시키기
+            const ttsButton = document.getElementById('help_staff');
+            if (ttsButton) {
+                ttsButton.click();
+            }
+            // 2) TTS가 들릴 수 있도록 약간의 지연 후 모달 표시
+            setTimeout(() => {
+                document.getElementById('staffModalOverlay').classList.add('show');
+            }, 900);
+        }
+        
+        // 직원호출 모달 닫기
+        function closeStaffModal() {
+            document.getElementById('staffModalOverlay').classList.remove('show');
+        }
+        
+        // 아이콘 클릭 처리
+        function handleIconClick(iconName) {
+            console.log(`${iconName} 아이콘이 클릭되었습니다!`);
+            if (iconName === '왼쪽') {
+                goBack();
+            } else if (iconName === '오른쪽') {
+                // 다음 단계로 진행
+                showDrinkModal('ade');
+            }
+        }
+        
+        // 터치 이벤트 개선
+        document.addEventListener('touchstart', function(event) {
+            if (event.target.classList.contains('drink-menu') || 
+                event.target.classList.contains('bottom-button') ||
+                event.target.classList.contains('icon-left') ||
+                event.target.classList.contains('icon-right')) {
+                event.target.style.transform = 'scale(0.98)';
+            }
+        });
+        
+        document.addEventListener('touchend', function(event) {
+            if (event.target.classList.contains('drink-menu') || 
+                event.target.classList.contains('bottom-button') ||
+                event.target.classList.contains('icon-left') ||
+                event.target.classList.contains('icon-right')) {
+                event.target.style.transform = 'scale(1)';
+            }
+        });
+        
+        // 페이지 로드 시 안내 메시지
+        window.addEventListener('load', function() {
+            console.log('음료 메뉴를 선택해주세요');
+        });
+    </script>
+</body>
+</html>

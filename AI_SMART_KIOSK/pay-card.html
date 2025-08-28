@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>카드 결제</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f0f0;
+        }
+        
+        /* 키오스크 프레임 스타일 (order-type.html과 동일) */
+        .kiosk-frame {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 1080px; /* 기준 가로(9:16) */
+            height: 1920px;  /* 기준 세로(9:16) */
+            background: #FFF9E7; /* 키오스크 안쪽 배경 */
+            border: 12px solid #222; /* 베젤 느낌 */
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 뷰포트가 더 작으면 비율을 유지하며 스케일 다운 (세로형 9:16) */
+        @media (max-aspect-ratio: 9/16) {
+            .kiosk-frame {
+                /* 화면이 아주 좁은 경우: 가로 길이에 맞춰 축소 */
+                transform: translate(-50%, -50%) scale(calc((100vw - 24px) / 1080));
+            }
+        }
+        @media (min-aspect-ratio: 9/16) {
+            .kiosk-frame {
+                /* 화면이 비교적 넓은 경우: 세로 길이에 맞춰 축소 */
+                transform: translate(-50%, -50%) scale(calc((100vh - 24px) / 1920));
+            }
+        }
+        
+        .kiosk-container {
+            width: 100% !important; 
+            height: 100% !important; 
+            position: relative;
+            background: #F3FA8F; 
+            overflow: hidden; 
+            border-radius: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            /* 외곽선에 완전히 꽉 차도록 강제 적용 */
+            margin: 0 !important; 
+            padding: 0 !important;
+            outline: none; 
+            outline-offset: 0; 
+            box-shadow: none;
+            /* 외곽선 경계에 딱 맞춤 */
+            min-width: 100%; 
+            min-height: 100%;
+            max-width: 100%; 
+            max-height: 100%;
+        }
+        
+        .top-section {
+            width: 1080px;
+            height: 300px;
+            position: relative;
+            background: #D5DF8A;
+            box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+        }
+        
+        .step-indicators {
+            padding: 10px 5px;
+            left: 0px;
+            top: 15px;
+            position: absolute;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            display: inline-flex;
+            width: 100%;
+        }
+        
+        .step-indicator {
+            width: 350px;
+            height: 250px;
+            background: #D9D9D9;
+            border-radius: 20px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .step-indicator.active {
+            background: #FF0000;
+            box-shadow: 0 8px 16px rgba(255, 0, 0, 0.4);
+        }
+        
+        .step-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000000;
+            font-size: 48px;
+            font-family: Inter;
+            font-weight: 700;
+            text-align: center;
+            line-height: 1.1;
+            padding: 10px;
+        }
+        
+        .step-indicator.active .step-text {
+            color: #FFFFFF;
+        }
+        
+        .card-instruction {
+            width: 900px;
+            height: 500px;
+            padding: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+            border-radius: 60px;
+            justify-content: center;
+            align-items: center;
+            display: flex;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            position: relative;
+            border: 8px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+        }
+        
+        .card-instruction::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border-radius: 60px;
+            z-index: 1;
+        }
+        
+        .card-instruction:hover {
+            transform: scale(1.03);
+            box-shadow: 0 20px 50px rgba(102, 126, 234, 0.6);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .card-instruction:active {
+            transform: scale(0.98);
+        }
+        
+        .instruction-text {
+            color: white;
+            font-size: 80px;
+            font-family: Inter;
+            font-weight: 700;
+            word-wrap: break-word;
+            text-align: center;
+            line-height: 1.4;
+            text-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .total-amount {
+            color: #FFD700;
+            font-weight: 900;
+            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.5);
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px 40px;
+            border-radius: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            margin-top: 20px;
+            display: inline-block;
+        }
+        
+        .card-image {
+            width: 600px;
+            height: 600px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border: 8px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 200px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            box-shadow: 0 15px 35px rgba(240, 147, 251, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card-image::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+            border-radius: 50px;
+            z-index: 1;
+        }
+        
+        .card-image:hover {
+            transform: scale(1.05);
+            box-shadow: 0 20px 50px rgba(240, 147, 251, 0.6);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .card-image:active {
+            transform: scale(0.98);
+        }
+        
+        .card-icon {
+            position: relative;
+            z-index: 2;
+            filter: drop-shadow(3px 3px 8px rgba(0, 0, 0, 0.3));
+        }
+        
+        .bottom-section {
+            flex: 0 0 297px;
+            width: 100%;
+            position: relative;
+            background: #D5DF8A;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            overflow: hidden;
+            margin: 0; /* 외곽선에 맞춰 여백 제거 */
+            min-width: 100%; /* 최소 너비 보장 */
+        }
+        
+        .bottom-button {
+            width: 535px !important;
+            height: 297px !important;
+            border: none !important;
+            cursor: pointer !important;
+            font-size: 60px !important;
+            font-weight: 700 !important;
+            color: #FFFFFF !important;
+            transition: transform .3s ease !important;
+        }
+        
+        .bottom-section .bottom-button:first-child {
+            background: linear-gradient(180deg, #304cec 0%, #566ad8 100%);
+        }
+        
+        .bottom-section .bottom-button:nth-child(2) {
+            background: linear-gradient(180deg, #FF6B6B 0%, #D32F2F 100%);
+        }
+        
+        .bottom-button:hover { transform: scale(1.02); }
+        .bottom-button:active { transform: scale(0.98); }
+        
+        .icon-left, .icon-right {
+            position: absolute;
+            cursor: pointer;
+            transition: transform .2s ease;
+        }
+        
+        .icon-left {
+            width: 110px !important;
+            height: 110px !important;
+            left: 18px !important;
+            top: 50% !important;
+            bottom: auto !important;
+            transform: translateY(-50%) !important;
+            z-index: 2 !important;
+        }
+        
+        .icon-right {
+            width: 110px !important;
+            height: 110px !important;
+            right: 18px !important;
+            top: 50% !important;
+            bottom: auto !important;
+            transform: translateY(-50%) !important;
+            z-index: 2 !important;
+        }
+        
+        .icon-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+        
+        .icon-left:hover, .icon-right:hover {
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .icon-left:active, .icon-right:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+        
+        /* 직원호출 모달 스타일 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+        
+        .staff-modal {
+            width: 1000px;
+            height: 800px;
+            background: #FFF9E7;
+            border-radius: 50px;
+            outline: 15px #FF6B6B solid;
+            outline-offset: -15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        .staff-modal-icon {
+            font-size: 120px;
+            margin-bottom: 40px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .staff-modal-title {
+            font-size: 72px;
+            font-weight: bold;
+            margin-bottom: 40px;
+            color: #FF6B6B;
+        }
+        
+        .staff-modal-message {
+            font-size: 48px;
+            margin-bottom: 60px;
+            color: #333;
+            line-height: 1.4;
+        }
+        
+        .staff-modal-btn {
+            padding: 30px 80px;
+            border: none;
+            border-radius: 40px;
+            font-size: 48px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            background: #4CAF50;
+            color: white;
+            min-width: 200px;
+        }
+        
+        .staff-modal-btn:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        
+        .staff-modal-btn:active {
+            transform: scale(0.98);
+        }
+        
+        /* 반응형 디자인 */
+        @media (max-width: 1200px) {
+            .kiosk-container {
+                width: 90vw;
+                height: 90vh;
+                border-radius: 30px;
+            }
+            
+            .card-instruction {
+                width: 80vw;
+                height: 25vh;
+                padding: 40px;
+            }
+            
+            .instruction-text {
+                font-size: 3rem;
+            }
+            
+            .card-image {
+                width: 40vw;
+                height: 40vw;
+            }
+            
+            .bottom-button {
+                width: 40vw;
+                height: 25vh;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .kiosk-container {
+                width: 95vw;
+                height: 95vh;
+                border-radius: 20px;
+            }
+            
+            .card-instruction {
+                width: 90vw;
+                height: 20vh;
+                padding: 20px;
+            }
+            
+            .instruction-text {
+                font-size: 2rem;
+            }
+            
+            .card-image {
+                width: 60vw;
+                height: 60vw;
+            }
+            
+            .bottom-section {
+                flex-direction: column;
+                height: auto;
+                padding: 20px;
+            }
+            
+            .bottom-button {
+                width: 80vw;
+                height: 15vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="kiosk-frame">
+    <div class="kiosk-container">
+        <!-- 상단 섹션 -->
+        <div class="top-section">
+            <div class="step-indicators">
+                <div class="step-indicator"><div class="step-text">1단계.<br/>메뉴 고르기</div></div>
+                <div class="step-indicator"><div class="step-text">2단계.<br/>옵션 고르기</div></div>
+                <div class="step-indicator active"><div class="step-text">3단계.<br/>결제 하기</div></div>
+            </div>
+        </div>
+        
+        <!-- 카드 결제 안내 -->
+        <div class="card-instruction" onclick="proceedToPayment()">
+            <div class="instruction-text">
+                카드를 넣어주세요.<br/>
+                총 결제 금액: <span id="totalAmount" class="total-amount">0</span> 원
+            </div>
+        </div>
+        
+        <!-- 카드 이미지 -->
+        <div class="card-image" onclick="proceedToPayment()">
+            <div class="card-icon">💳</div>
+        </div>
+        
+        <!-- 하단 섹션 -->
+        <div class="bottom-section">
+            <button class="bottom-button" onclick="goBack()">뒤로가기</button>
+            <button class="bottom-button" onclick="callStaff()">직원호출</button>
+            
+            <!-- 왼쪽 아이콘 -->
+            <div class="icon-left" onclick="handleIconClick('왼쪽')">
+                <img class="icon-img" src="./img/pngegg (1).png" alt="뒤로가기 아이콘" />
+            </div>
+            
+            <!-- 오른쪽 아이콘 -->
+            <div class="icon-right" onclick="handleIconClick('오른쪽')">
+                <img class="icon-img" src="./img/127164.png" alt="다음 아이콘" />
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- 직원호출 모달 -->
+    <div class="modal-overlay" id="staffModalOverlay">
+        <div class="staff-modal">
+            <div class="staff-modal-icon">🚨</div>
+            <div class="staff-modal-title">직원 호출</div>
+            <div class="staff-modal-message">직원을 호출했습니다.<br/>잠시만 기다려주세요.</div>
+            <button class="staff-modal-btn" onclick="closeStaffModal()">확인</button>
+        </div>
+    </div>
+
+    <script>
+        let totalAmount = 0;
+        
+        // 총 결제 금액 계산 및 표시
+        function calculateTotalAmount() {
+            try {
+                // localStorage에서 장바구니 정보 가져오기 (kioskCart 키 사용)
+                const cartItems = JSON.parse(localStorage.getItem('kioskCart')) || [];
+                
+                // 총 금액 계산 - totalPrice 필드 사용
+                totalAmount = cartItems.reduce((total, item) => {
+                    // totalPrice가 있으면 사용, 없으면 price * quantity 시도
+                    if (item.totalPrice !== undefined) {
+                        return total + item.totalPrice;
+                    } else if (item.price !== undefined && item.quantity !== undefined) {
+                        return total + (item.price * item.quantity);
+                    } else {
+                        console.warn('가격 정보가 없는 아이템:', item);
+                        return total;
+                    }
+                }, 0);
+                
+                // 금액 표시 업데이트
+                updateTotalAmountDisplay();
+                
+                console.log('장바구니 총 금액:', totalAmount);
+                console.log('장바구니 아이템:', cartItems);
+            } catch (error) {
+                console.error('장바구니 정보를 불러오는 중 오류 발생:', error);
+                // 기본값 설정
+                totalAmount = 0;
+                updateTotalAmountDisplay();
+            }
+        }
+        
+        // 총 금액 표시 업데이트
+        function updateTotalAmountDisplay() {
+            const totalAmountElement = document.getElementById('totalAmount');
+            if (totalAmountElement) {
+                totalAmountElement.textContent = totalAmount.toLocaleString();
+            }
+        }
+        
+        // 결제 진행
+        function proceedToPayment() {
+            if (totalAmount <= 0) {
+                alert('장바구니가 비어있습니다. 메뉴를 선택해주세요.');
+                return;
+            }
+            
+            // 결제 진행 중 화면으로 이동
+            window.location.href = 'pay-ing.html';
+        }
+        
+        // 뒤로 가기
+        function goBack() {
+            window.location.href = 'pay-method.html';
+        }
+        
+        // 직원 호출
+        function callStaff() {
+            // 커스텀 직원호출 모달 표시
+            document.getElementById('staffModalOverlay').classList.add('show');
+        }
+        
+        // 직원호출 모달 닫기
+        function closeStaffModal() {
+            document.getElementById('staffModalOverlay').classList.remove('show');
+        }
+        
+        // 아이콘 클릭 처리
+        function handleIconClick(iconName) {
+            console.log(`${iconName} 아이콘이 클릭되었습니다!`);
+            if (iconName === '왼쪽') {
+                goBack();
+            } else if (iconName === '오른쪽') {
+                // 다음 단계로 진행
+                proceedToPayment();
+            }
+        }
+        
+        // 키보드 단축키 지원
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' || event.key === ' ' || event.key === 'Space') {
+                proceedToPayment();
+            } else if (event.key === 'Escape') {
+                goBack();
+            }
+        });
+        
+        // 터치 이벤트 개선
+        document.addEventListener('touchstart', function(event) {
+            if (event.target.classList.contains('card-instruction') || 
+                event.target.classList.contains('card-image') ||
+                event.target.classList.contains('bottom-button') ||
+                event.target.classList.contains('icon-left') ||
+                event.target.classList.contains('icon-right')) {
+                event.target.style.transform = 'scale(0.98)';
+            }
+        });
+        
+        document.addEventListener('touchend', function(event) {
+            if (event.target.classList.contains('card-instruction') || 
+                event.target.classList.contains('card-image') ||
+                event.target.classList.contains('bottom-button') ||
+                event.target.classList.contains('icon-left') ||
+                event.target.classList.contains('icon-right')) {
+                event.target.style.transform = 'scale(1)';
+            }
+        });
+        
+        // 페이지 로드 시 실행
+        window.addEventListener('load', function() {
+            console.log('카드 결제 페이지 로드됨');
+            calculateTotalAmount();
+            
+            // 장바구니가 비어있는 경우 안내 메시지
+            if (totalAmount <= 0) {
+                console.log('장바구니가 비어있습니다.');
+            } else {
+                console.log(`총 결제 금액: ${totalAmount.toLocaleString()}원`);
+            }
+        });
+    </script>
+</body>
+</html>

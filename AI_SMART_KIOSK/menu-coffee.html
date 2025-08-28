@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>커피 메뉴 선택</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f0f0f0; }
+
+        .kiosk-container {
+            width: 100% !important; height: 100% !important; background: #F3FA8F; overflow: hidden; border-radius: 0;
+            display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+            /* 외곽선에 완전히 꽉 차도록 강제 적용 */
+            margin: 0 !important; padding: 0 !important;
+            outline: none; outline-offset: 0; box-shadow: none;
+            /* 외곽선 경계에 딱 맞춤 */
+            min-width: 100%; min-height: 100%;
+            max-width: 100%; max-height: 100%;
+        }
+
+        /* 상단 안내문 */
+        .top-section { width: 100%; height: 300px; background: #D5DF8A; box-shadow: 0 4px 4px rgba(0,0,0,0.25);
+            display: flex; align-items: center; justify-content: center; padding: 20px; margin: 0; min-width: 100%; }
+        .elderly-guide { text-align: center; background: rgba(255,255,255,0.95); padding: 30px 60px; border-radius: 40px; box-shadow: 0 6px 12px rgba(0,0,0,0.2); max-width: 90%; }
+        .guide-text { margin-bottom: 15px; color: #d32f2f; font-weight: bold; font-size: 54px; }
+        .guide-subtext { color: #1976d2; font-size: 40px; }
+
+        /* 메뉴 - 3개씩 2줄 배치로 수정 */
+        .menu-grid {
+            align-self: stretch;
+            padding-left: 30px;
+            padding-right: 30px;
+            justify-content: center;
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 40px;
+            flex: 1;
+            width: 1200px; /* 3개씩 들어가도록 더 넓게 설정 */
+        }
+        .menu-item { 
+            width: 320px; 
+            height: 580px; /* 세로 길이를 늘림 */
+            background: #8B4513; 
+            box-shadow: 0px 4px 15px 5px rgba(0, 0, 0, 0.50);
+            border-radius: 50px; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 20px; /* menu-tea.html과 동일한 패딩 */
+            text-align: center; 
+            position: relative;
+            border: 3px solid #654321;
+        }
+        .menu-item:hover { 
+            transform: scale(1.05); 
+            box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.6);
+            background: #A0522D; 
+        }
+        .menu-item:active { 
+            transform: scale(0.98); 
+        }
+        .menu-image {
+            width: 260px;
+            height: 320px;           /* menu-tea.html과 동일한 크기 */
+            background: #f0f0f0;
+            border-radius: 30px;
+            margin-bottom: 22px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4rem;
+            color: #666;
+            border: 3px dashed #ccc;
+            overflow: hidden;
+        }
+        
+        .menu-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;      /* 비율 유지해 깨짐 방지 */
+            object-position: center;
+            border-radius: 24px;
+        }
+        .menu-name { 
+            font-size: 3.2rem; 
+            font-weight: bold; 
+            color: #fff; 
+            margin-bottom: 15px; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .menu-price { 
+            font-size: 2rem; 
+            color: #FFD700; 
+            font-weight: bold; 
+            margin-bottom: 10px; 
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        .menu-description { font-size: 1.4rem; color: #666; }
+
+        /* 하단 바 - order-type.html과 동일하게 */
+        .bottom-section {
+            flex: 0 0 297px; width: 100%; position: relative; background: #D5DF8A;
+            display: flex; align-items: center; justify-content: center; gap: 5px; overflow: hidden;
+            margin: 0; /* 외곽선에 맞춰 여백 제거 */
+            min-width: 100%; /* 최소 너비 보장 */
+        }
+        .bottom-button { width: 535px; height: 297px; border: none; cursor: pointer; font-size: 60px; font-weight: 700; color: #fff; transition: transform .3s ease; }
+        .bottom-section .bottom-button:first-child { background: linear-gradient(180deg, #304cec 0%, #566ad8 100%); }
+        .bottom-section .bottom-button:nth-child(2) { background: linear-gradient(180deg, #FF6B6B 0%, #D32F2F 100%); }
+        .bottom-button:hover { transform: scale(1.02); }
+        .bottom-button:active { transform: scale(0.98); }
+
+        /* 하단 아이콘 이미지 - order-type.html과 동일하게 */
+        .icon-left, .icon-right { position: absolute; cursor: pointer; transition: transform .2s ease; z-index: 2; }
+        /* 글씨 옆에 보이도록 수평 중앙선 근처로 올림 */
+        .icon-left { width: 110px; height: 110px; left: 18px; top: 50%; bottom: auto; transform: translateY(-50%); }
+        .icon-right { width: 110px; height: 110px; right: 18px; top: 50%; bottom: auto; transform: translateY(-50%); }
+        .icon-img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .icon-left:hover, .icon-right:hover { transform: scale(1.08); }
+        .icon-left:active, .icon-right:active { transform: scale(0.95); }
+
+        /* 직원 호출 모달 */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.show { display: flex; }
+        .staff-modal { width: 1000px; height: 800px; background: #FFF9E7; border-radius: 50px; outline: 15px #FF6B6B solid; outline-offset: -15px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px; text-align:center; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        .staff-modal-icon { font-size: 120px; margin-bottom: 40px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%{transform:scale(1);} 50%{transform:scale(1.1);} 100%{transform:scale(1);} }
+        .staff-modal-title { font-size: 72px; font-weight: 800; margin-bottom: 40px; color: #FF6B6B; }
+        .staff-modal-message { font-size: 48px; margin-bottom: 60px; color: #333; line-height: 1.4; }
+        .staff-modal-btn { padding: 30px 80px; border: none; border-radius: 40px; font-size: 48px; font-weight: 800; cursor: pointer; transition: .3s; background: #4CAF50; color: #fff; }
+        .staff-modal-btn:hover { background: #45a049; transform: scale(1.05); }
+        .staff-modal-btn:active { transform: scale(0.98); }
+
+        /* 옵션 선택 모달 */
+        .option-modal { 
+            width: 1000px; 
+            height: 900px; 
+            background: #fff; 
+            border-radius: 40px; 
+            padding: 40px; 
+            text-align: center; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); 
+            display:flex; 
+            flex-direction:column; 
+            align-items:center; 
+            justify-content:center; 
+        }
+        .option-modal h2 { font-size: 64px; margin-bottom: 30px; }
+        .option-modal img { width: 250px; height: 250px; object-fit: contain; margin-bottom: 20px; }
+        .option-modal p { font-size: 32px; margin-bottom: 40px; }
+        .option-buttons { display: flex; gap: 20px; }
+        .option-btn { padding: 20px 50px; font-size: 40px; font-weight: bold; border: none; border-radius: 30px; cursor: pointer; transition: 0.3s; }
+        .option-btn.confirm { background: #4CAF50; color: #fff; }
+        .option-btn.cancel { background: #FF6B6B; color: #fff; }
+        .option-btn:hover { transform: scale(1.05); }
+        .option-btn:active { transform: scale(0.95); }
+
+        /* 새로운 옵션 선택 모달 스타일 */
+        .modal-overlay { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0, 0, 0, 0.7); 
+            display: none; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 1000; 
+        }
+        
+        .modal-overlay.show { 
+            display: flex; 
+        }
+        
+        .modal { 
+            width: 1000px; 
+            height: 1800px; 
+            background: #FFF9E7; 
+            border-radius: 50px; 
+            outline: 10px black solid; 
+            outline-offset: -10px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: flex-start; 
+            padding: 20px; 
+        }
+        
+        .modal-step-indicators { 
+            width: 100%; 
+            height: 200px; 
+            background: #D5DF8A; 
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center; 
+            border-radius: 30px; 
+            margin-bottom: 20px; 
+            flex-shrink: 0; 
+        }
+        
+        .modal-step-item { 
+            flex: 1; 
+            margin: 0 10px; 
+            height: 160px; 
+            background: #D9D9D9; 
+            border-radius: 20px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 32px; 
+            font-weight: bold; 
+            text-align: center; 
+        }
+        
+        .modal-step-item.active { 
+            background: #FF0000; 
+            color: #fff; 
+        }
+
+        .modal-options-section { 
+            flex: 1; 
+            width: 900px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 30px; 
+            align-items: center; 
+            justify-content: flex-start; 
+            overflow: auto; 
+        }
+
+        .modal-option-group { 
+            width: 100%; 
+            display: flex; 
+            gap: 20px; 
+        }
+        
+        /* 카테고리 박스 스타일 */
+        .option-category {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            border: 3px solid #D5DF8A;
+            border-radius: 30px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .category-title {
+            text-align: center;
+            font-size: 36px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .modal-option-box { 
+            flex: 1; 
+            height: 230px; 
+            background: #D9D9D9; 
+            border-radius: 40px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 48px; 
+            text-align: center; 
+            cursor: pointer; 
+            transition: all 0.3s; 
+            font-weight: bold;
+            color: #333;
+            border: 3px solid transparent;
+        }
+        
+        .modal-option-box.selected { 
+            background: #4CAF50 !important; 
+            border: 5px solid #2E7D32 !important; 
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            color: white !important;
+            font-weight: 900;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .modal-option-box:hover { 
+            background: #C0C0C0; 
+            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        /* 옵션별 색상 구분 - 선택되지 않은 상태 */
+        .modal-option-box[onclick*="hot"] { background: #FFE4E1; border-color: #FF6B6B; }
+        .modal-option-box[onclick*="cold"] { background: #E3F2FD; border-color: #2196F3; }
+        .modal-option-box[onclick*="sweet"] { background: #FFF8E1; border-color: #FFC107; }
+        .modal-option-box[onclick*="bitter"] { background: #F3E5F5; border-color: #9C27B0; }
+        .modal-option-box[onclick*="strong"] { background: #E8F5E8; border-color: #4CAF50; }
+        .modal-option-box[onclick*="weak"] { background: #F1F8E9; border-color: #8BC34A; }
+        .modal-option-box[onclick*="large"] { background: #FFF3E0; border-color: #FF9800; }
+        .modal-option-box[onclick*="xlarge"] { background: #FFEBEE; border-color: #F44336; }
+
+        /* 선택된 상태에서의 색상 - 더 진한 색상으로 변경 */
+        .modal-option-box.selected[onclick*="hot"] { background: #FF6B6B !important; border-color: #D32F2F !important; }
+        .modal-option-box.selected[onclick*="cold"] { background: #2196F3 !important; border-color: #1976D2 !important; }
+        .modal-option-box.selected[onclick*="sweet"] { background: #FFC107 !important; border-color: #FF8F00 !important; }
+        .modal-option-box.selected[onclick*="bitter"] { background: #9C27B0 !important; border-color: #7B1FA2 !important; }
+        .modal-option-box.selected[onclick*="strong"] { background: #4CAF50 !important; border-color: #388E3C !important; }
+        .modal-option-box.selected[onclick*="weak"] { background: #8BC34A !important; border-color: #689F38 !important; }
+        .modal-option-box.selected[onclick*="large"] { background: #FF9800 !important; border-color: #F57C00 !important; }
+        .modal-option-box.selected[onclick*="xlarge"] { background: #F44336 !important; border-color: #D32F2F !important; }
+
+        .modal-summary-bar { 
+            width: 900px; 
+            height: 150px; 
+            background: #AAE4AA; 
+            border-radius: 30px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 0 40px; 
+            font-size: 32px; 
+            font-weight: bold; 
+            margin-top: 10px; 
+            margin-bottom: 10px; 
+            flex-shrink: 0; 
+        }
+
+        .modal-buttons { 
+            width: 900px; 
+            height: 180px; 
+            display: flex; 
+            gap: 20px; 
+            flex-shrink: 0; 
+        }
+        
+        .modal-buttons button { 
+            flex: 1; 
+            border: none; 
+            border-radius: 20px; 
+            font-size: 36px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: 0.2s; 
+        }
+        
+        .modal-buttons button:first-child { 
+            background: #D9D9D9; 
+        }
+        
+        .modal-buttons button:last-child { 
+            background: #4CAF50; 
+            color: white; 
+        }
+        
+        .modal-buttons button:hover { 
+            transform: scale(1.05); 
+        }
+
+        /* 장바구니 추가 완료 모달 스타일 */
+        .cart-success-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        
+        .cart-success-modal.show {
+            display: flex;
+        }
+        
+        .cart-success-content {
+            width: 1000px;
+            height: 1200px;
+            background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
+            border-radius: 80px;
+            outline: 20px #2E7D32 solid;
+            outline-offset: -20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px;
+            text-align: center;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cart-success-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border-radius: 80px;
+        }
+        
+        .success-icon {
+            font-size: 200px;
+            margin-bottom: 50px;
+            animation: successBounce 1s ease-in-out;
+            position: relative;
+            z-index: 1;
+        }
+        
+        @keyframes successBounce {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .success-title {
+            font-size: 100px;
+            font-weight: 900;
+            color: white;
+            margin-bottom: 40px;
+            text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .success-message {
+            font-size: 70px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 70px;
+            line-height: 1.3;
+            text-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .success-button {
+            padding: 40px 100px;
+            border: none;
+            border-radius: 60px;
+            font-size: 64px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            color: #4CAF50;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .success-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        }
+        
+        .success-button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <div class="kiosk-frame">
+    <div class="kiosk-container">
+        <div class="top-section">
+            <div class="elderly-guide">
+                <div class="guide-text">커피 메뉴를 선택해주세요!</div>
+                <div class="guide-subtext">원하시는 커피를 선택하면 옵션을 고를 수 있습니다.</div>
+            </div>
+        </div>
+
+        <!-- 메뉴 카테고리 버튼들 - order-type.html과 동일한 구조 -->
+        <div class="main-buttons">
+            <div class="menu-grid" id="menuGrid"></div>
+        </div>
+
+        <div class="bottom-section">
+            <button class="bottom-button" onclick="goBack()">뒤로가기</button>
+            <button id="help_staff" class="bottom-button" onclick="callStaff()">직원 호출</button>
+            
+            <!-- 왼쪽 아이콘 -->
+            <div class="icon-left" onclick="goBack()">
+                <img class="icon-img" src="./img/pngegg (1).png" alt="뒤로가기 아이콘" />
+            </div>
+            
+            <!-- 오른쪽 아이콘 -->
+            <div class="icon-right" onclick="callStaff()">
+                <img class="icon-img" src="./img/127164.png" alt="직원 호출 아이콘" />
+            </div>
+        </div>
+    </div>
+
+    <!-- 직원 호출 모달 -->
+    <div class="modal-overlay" id="staffModalOverlay">
+        <div class="staff-modal">
+            <div class="staff-modal-icon">🚨</div>
+            <div class="staff-modal-title">직원 호출</div>
+            <div class="staff-modal-message">직원을 호출했습니다.<br/>잠시만 기다려주세요.</div>
+            <button class="staff-modal-btn" onclick="closeStaffModal()">확인</button>
+        </div>
+    </div>
+
+    <!-- TTS 트리거용 숨김 버튼 (선택 옵션 안내) -->
+    <button id="choice_option" style="display:none" aria-hidden="true" tabindex="-1"></button>
+
+    <!-- 옵션 선택 모달 -->
+    <div class="modal-overlay" id="optionModalOverlay">
+        <div class="option-modal" id="optionModal">
+            <h2 id="optionTitle"></h2>
+            <img id="optionImage" src="" alt="메뉴 이미지">
+            <p id="optionDescription"></p>
+            <div class="option-buttons">
+                <button class="option-btn confirm" onclick="confirmOption()">확인</button>
+                <button class="option-btn cancel" onclick="closeOptionModal()">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 새로운 옵션 선택 모달 -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-step-indicators">
+                <div class="modal-step-item">1단계.<br/>메뉴 고르기</div>
+                <div class="modal-step-item active">2단계.<br/>옵션 고르기</div>
+                <div class="modal-step-item">3단계.<br/>결제 하기</div>
+            </div>
+            <div class="modal-options-section" id="optionsSection"></div>
+            <div class="modal-summary-bar">
+                <div>주문 추가 선택 :</div>
+                <div id="totalPrice">총 금액 : 0원</div>
+            </div>
+            <div class="modal-buttons">
+                <button onclick="closeModal()">뒤로가기</button>
+                <button onclick="addToCart()">장바구니 담기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 장바구니 추가 완료 모달 -->
+    <div class="cart-success-modal" id="cartSuccessModal">
+        <div class="cart-success-content">
+            <div class="success-icon">✅</div>
+            <div class="success-title">장바구니 추가</div>
+            <div class="success-message">장바구니에 추가되었습니다.<br/>결제 페이지로 이동합니다.</div>
+            <button class="success-button" onclick="closeCartSuccessModal()">확인</button>
+        </div>
+    </div>
+
+    <script src="tts(2차 수정)/tts_2.js"></script>
+    <script>
+        let selectedMenu = null;
+        let selectedOptions = [];
+        let basePrice = 0;
+        let currentMenuId = '';
+
+        window.addEventListener('load', function() {
+            const menuGrid = document.getElementById('menuGrid');
+            const coffeeMenus = [
+                { id: 'americano', name: '아메리카노', price: 4500, image: '메뉴 이미지/커피(Coffee)/아메리카노.png', description: '깔끔하고 진한 에스프레소' },
+                { id: 'latte', name: '카페라떼', price: 5500, image: '메뉴 이미지/커피(Coffee)/카페라떼.png', description: '부드러운 우유와 에스프레소' },
+                { id: 'cappuccino', name: '카푸치노', price: 5500, image: '메뉴 이미지/커피(Coffee)/카푸치노.png', description: '에스프레소와 우유 거품' },
+                { id: 'mocha', name: '모카 커피', price: 6000, image: '메뉴 이미지/커피(Coffee)/모카커피.png', description: '초콜릿과 커피의 조화' },
+                { id: 'dutch', name: '더치 커피', price: 5000, image: '메뉴 이미지/커피(Coffee)/더치커피.png', description: '부드럽고 깊은 풍미' },
+                { id: 'dabang', name: '다방커피', price: 4000, image: '메뉴 이미지/커피(Coffee)/카페라떼.png', description: '달콤하고 추억의 맛' }
+            ];
+
+            menuGrid.innerHTML = coffeeMenus.map(menu => `
+                <div class="menu-item" onclick="showModal('${menu.id}')">
+                    <div class="menu-image"><img src="${menu.image}" alt="${menu.name}"></div>
+                    <div class="menu-name">${menu.name}</div>
+                    <div class="menu-price">${menu.price.toLocaleString()}원</div>
+                </div>
+            `).join('');
+        });
+
+        // 커피 메뉴 ID로 메뉴 찾기
+        function getCoffeeMenuById(id) {
+            const coffeeMenus = [
+                { id: 'americano', name: '아메리카노', price: 4500, image: '메뉴 이미지/커피(Coffee)/아메리카노.png', description: '깔끔하고 진한 에스프레소' },
+                { id: 'latte', name: '카페라떼', price: 5500, image: '메뉴 이미지/커피(Coffee)/카페라떼.png', description: '부드러운 우유와 에스프레소' },
+                { id: 'cappuccino', name: '카푸치노', price: 5500, image: '메뉴 이미지/커피(Coffee)/카푸치노.png', description: '에스프레소와 우유 거품' },
+                { id: 'mocha', name: '모카 커피', price: 6000, image: '메뉴 이미지/커피(Coffee)/모카커피.png', description: '초콜릿과 커피의 조화' },
+                { id: 'dutch', name: '더치 커피', price: 5000, image: '메뉴 이미지/커피(Coffee)/더치커피.png', description: '부드럽고 깊은 풍미' },
+                { id: 'dabang', name: '다방커피', price: 4000, image: '메뉴 이미지/커피(Coffee)/카페라떼.png', description: '달콤하고 추억의 맛' }
+            ];
+            return coffeeMenus.find(menu => menu.id === id);
+        }
+
+        function goBack() { window.location.href = 'menu-selection.html'; }
+
+        function callStaff() { document.getElementById('staffModalOverlay').classList.add('show'); }
+        function closeStaffModal() { document.getElementById('staffModalOverlay').classList.remove('show'); }
+
+        // 새로운 모달 표시 함수
+        function showModal(menuId) {
+            document.getElementById('modalOverlay').classList.add('show');
+            const optionsSection = document.getElementById('optionsSection');
+            const currentMenu = getCoffeeMenuById(menuId);
+            
+            // 메뉴가 존재하지 않으면 오류 방지
+            if (!currentMenu) {
+                console.error('메뉴를 찾을 수 없습니다:', menuId);
+                return;
+            }
+            
+            basePrice = currentMenu.price || 0;
+            currentMenuId = menuId;
+
+            const optionGroups = [
+                [ { id:'hot', name:'뜨겁게', price:0, group:'temp' },
+                  { id:'cold', name:'얼음 넣기', price:0, group:'temp' } ],
+                [ { id:'sweet', name:'달콤하게', price:300, group:'sweet' },
+                  { id:'bitter', name:'많이 달달하게', price:500, group:'sweet' } ],
+                [ { id:'strong', name:'진하게', price:500, group:'strength' },
+                  { id:'weak', name:'연하게', price:0, group:'strength' } ],
+                [ { id:'large', name:'양 많이', price:500, group:'size' },
+                  { id:'xlarge', name:'양 엄청 많이', price:900, group:'size' } ]
+            ];
+
+            optionsSection.innerHTML = optionGroups.map(group => `
+                <div class="option-category">
+                    <div class="modal-option-group">
+                        ${group.map(opt => `
+                            <div class="modal-option-box" data-group="${opt.group}" onclick="toggleOption('${opt.id}', ${opt.price}, this, '${opt.group}')">
+                                ${opt.name}<br/>+ ${opt.price}원
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            // TTS: 옵션 선택을 안내
+            const ttsBtn = document.getElementById('choice_option');
+            if (ttsBtn) ttsBtn.click();
+            
+            // 모달이 열릴 때 기본 메뉴 가격을 표시
+            updateTotalPrice();
+        }
+
+        function toggleOption(optionId, price, element, group) {
+            const optionBox = element.closest('.modal-option-box');
+            
+            // 이미 선택된 옵션인지 확인
+            const isAlreadySelected = optionBox.classList.contains('selected');
+            
+            if (isAlreadySelected) {
+                // 이미 선택된 옵션이면 선택 해제
+                optionBox.classList.remove('selected');
+                selectedOptions = selectedOptions.filter(opt => opt.id !== optionId);
+            } else {
+                // 같은 그룹에서 단일 선택만 허용
+                try {
+                    const groupBoxes = optionBox.parentElement.querySelectorAll('.modal-option-box');
+                    groupBoxes.forEach(box => {
+                        if (box !== optionBox && box.dataset.group === group) {
+                            box.classList.remove('selected');
+                        }
+                    });
+                    // 데이터에서도 동일 그룹 기존 선택 제거
+                    selectedOptions = selectedOptions.filter(opt => opt.group !== group);
+                } catch (e) {}
+                
+                // 새 옵션 선택
+                optionBox.classList.add('selected');
+                selectedOptions.push({ id: optionId, price: price, group });
+            }
+            
+            updateTotalPrice();
+        }
+
+        function updateTotalPrice() {
+            let total = (basePrice || 0);
+            selectedOptions.forEach(opt => {
+                total += (opt.price || 0);
+            });
+            document.getElementById('totalPrice').textContent = `총 금액 : ${total.toLocaleString()}원`;
+        }
+
+        function addToCart() {
+            // 안전장치: 메뉴 정보 확인
+            if (!currentMenuId || !basePrice) {
+                console.error('메뉴 정보가 올바르지 않습니다');
+                return;
+            }
+            
+            const currentMenu = getCoffeeMenuById(currentMenuId);
+            if (!currentMenu) {
+                console.error('메뉴를 찾을 수 없습니다:', currentMenuId);
+                return;
+            }
+            
+            const orderItem = {
+                menuId: currentMenuId,
+                menuName: currentMenu.name,
+                options: selectedOptions,
+                totalPrice: (basePrice || 0) + selectedOptions.reduce((sum, opt) => sum + (opt.price || 0), 0)
+            };
+            localStorage.setItem('kioskCart', JSON.stringify([...JSON.parse(localStorage.getItem('kioskCart') || '[]'), orderItem]));
+            showCartSuccessModal();
+        }
+
+        function showCartSuccessModal() {
+            document.getElementById('cartSuccessModal').classList.add('show');
+        }
+
+        function closeCartSuccessModal() {
+            document.getElementById('cartSuccessModal').classList.remove('show');
+            closeModal();
+            window.location.href = 'pay-method.html';
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('show');
+            selectedOptions = [];
+            updateTotalPrice();
+        }
+    </script>
+</body>
+</html>

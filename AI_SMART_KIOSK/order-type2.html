@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>시니어 주문 유형 선택</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f0f0;
+        }
+        
+        .kiosk-container {
+            width: 100% !important;
+            height: 100% !important;
+            position: relative;
+            background: #FFF9E7;
+            overflow: hidden;
+            border-radius: 0;
+            outline: none;
+            outline-offset: 0;
+            /* 외곽선에 완전히 꽉 차도록 강제 적용 */
+            margin: 0 !important;
+            padding: 0 !important;
+            /* 외곽선 경계에 딱 맞춤 */
+            min-width: 100%;
+            min-height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 80px;
+            padding-top: 125px;
+            padding-bottom: 125px;
+        }
+        
+        .title {
+            width: 1294px;
+            height: 360px;
+            text-align: center;
+            color: black;
+            font-size: 70px;
+            font-family: jsMath-cmbx10, sans-serif;
+            font-weight: 700;
+            word-wrap: break-word;
+        }
+        
+        .main-image {
+            width: 1071px;
+            height: 941px;
+        }
+        
+        .button-container {
+            padding: 30px;
+            position: relative;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            display: inline-flex;
+        }
+        
+        .order-button {
+            width: 429px;
+            height: 202px;
+            background: #FFA30F;
+            border-radius: 50px;
+            border: 10px black solid;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            transition: all 0.3s ease;
+        }
+        
+        .order-button:hover {
+            background: #FF8C00;
+            transform: scale(1.05);
+        }
+        
+        .order-button:active {
+            transform: scale(0.98);
+        }
+        
+        .button-text {
+            color: black;
+            font-size: 70px;
+            font-family: jsMath-cmbx10, sans-serif;
+            font-weight: 700;
+            line-height: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="kiosk-frame">
+        <div class="kiosk-container">
+            <div class="title">A.I KIOSK<br/>CAFE</div>
+            <img class="main-image" src="placehold.png" alt="메인 이미지" />
+            <div class="button-container">
+                <!-- 박스 안에 글자를 넣고 가운데 정렬해요 → 글자도 클릭이 잘 인식돼요 -->
+                <div id="btnDineinBox" class="order-button" role="button" tabindex="0" aria-label="매장">
+                    <span class="button-text">매장</span>
+                </div>
+                <div id="btnTakeoutBox" class="order-button" role="button" tabindex="0" aria-label="포장">
+                    <span class="button-text">포장</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // 사용자가 매장/포장을 선택하면 세션에 저장해서 다음 화면에서 사용할 수 있게 해요.
+        const $btnDineinBox = document.getElementById('btnDineinBox');
+        const $btnTakeoutBox = document.getElementById('btnTakeoutBox');
+
+        $btnDineinBox?.addEventListener('click', function(){
+            try { sessionStorage.setItem('orderType', 'dinein'); } catch (e) {}
+            window.location.href = 'menu.html';
+        });
+        
+        $btnTakeoutBox?.addEventListener('click', function(){
+            try { sessionStorage.setItem('orderType', 'takeout'); } catch (e) {}
+            window.location.href = 'menu.html';
+        });
+
+        // 키보드 접근성: 엔터/스페이스로도 선택 가능하게
+        function attachKeyActivate(el, value){
+            if (!el) return;
+            el.addEventListener('keydown', function(ev){
+                if (ev.key === 'Enter' || ev.key === ' ') {
+                    ev.preventDefault();
+                    try { sessionStorage.setItem('orderType', value); } catch (e) {}
+                    window.location.href = 'menu.html';
+                }
+            });
+        }
+        
+        attachKeyActivate($btnDineinBox, 'dinein');
+        attachKeyActivate($btnTakeoutBox, 'takeout');
+    </script>
+</body>
+</html>

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 연령 판별</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f0f0;
+            cursor: pointer;
+        }
+        
+        .kiosk-container {
+            width: 100% !important;
+            height: 100% !important;
+            position: relative;
+            background: #FFF9E7;
+            overflow: hidden;
+            border-radius: 0;
+            outline: none;
+            outline-offset: 0;
+            /* 외곽선에 완전히 꽉 차도록 강제 적용 */
+            margin: 0 !important;
+            padding: 0 !important;
+            /* 외곽선 경계에 딱 맞춤 */
+            min-width: 100%;
+            min-height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        .camera-frame {
+            width: 600px;
+            height: 500px;
+            left: 240px;
+            top: 500px;
+            position: absolute;
+            border: 6px solid #333;
+            border-radius: 30px;
+            background: rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        .camera-frame::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border-radius: 40px;
+        }
+        
+        .camera-icon {
+            font-size: 150px;
+            color: #333;
+            animation: pulse 1.5s infinite;
+            z-index: 2;
+            position: relative;
+        }
+        
+        .scanning-line {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #4CAF50, transparent);
+            top: 0;
+            animation: scan 2s linear infinite;
+            z-index: 3;
+        }
+        
+        .scanning-line::before {
+            content: '';
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: #4CAF50;
+            border-radius: 50%;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 0 15px #4CAF50;
+        }
+        
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+        
+        .title {
+            width: 800px;
+            height: 300px;
+            left: 140px;
+            top: 150px;
+            position: absolute;
+            text-align: center;
+            color: black;
+            font-size: 120px;
+            font-family: Inter;
+            font-weight: 900;
+            word-wrap: break-word;
+            text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.5);
+            z-index: 2;
+        }
+        
+        .status-text {
+            width: 800px;
+            height: 200px;
+            left: 140px;
+            top: 1100px;
+            position: absolute;
+            text-align: center;
+            justify-content: center;
+            display: flex;
+            flex-direction: column;
+            color: black;
+            font-size: 72px;
+            font-family: Inter;
+            font-weight: 700;
+            word-wrap: break-word;
+            text-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5);
+            z-index: 2;
+        }
+        
+        .progress-bar {
+            width: 800px;
+            height: 15px;
+            left: 140px;
+            top: 1350px;
+            position: absolute;
+            background: #E0E0E0;
+            border-radius: 8px;
+            overflow: hidden;
+            z-index: 2;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #66BB6A);
+            border-radius: 8px;
+            width: 0%;
+            transition: width 0.1s ease;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
+        }
+        
+        .age-result {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 150px;
+            font-weight: 900;
+            color: #00ff88;
+            text-shadow: 0 0 30px #00ff88;
+            opacity: 0;
+            z-index: 4;
+            animation: resultShow 2s ease-in-out forwards;
+        }
+        
+        @keyframes resultShow {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        .success-effect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle, rgba(76, 175, 80, 0.2) 0%, transparent 70%);
+            opacity: 0;
+            animation: successPulse 0.8s ease-in-out forwards;
+            z-index: 5;
+        }
+        
+        @keyframes successPulse {
+            0% { opacity: 0; transform: scale(0); }
+            50% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 0; transform: scale(1.5); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body onclick="startAgeDetection()">
+    <div class="kiosk-frame">
+        <div class="kiosk-container">
+            <div class="title">AI 연령<br/>판별 중</div>
+            
+            <div class="camera-frame">
+                <div class="camera-icon">📷</div>
+                <div class="scanning-line"></div>
+            </div>
+            
+            <div class="status-text">카메라로 연령을<br/>분석하고 있습니다...</div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <div class="success-effect hidden" id="successEffect"></div>
+            
+            <!-- 카메라 미리보기와 캔버스는 화면에 보이지 않게 숨겨둘게요 -->
+            <video id="camera" autoplay playsinline style="display:none; position:absolute; left:24px; bottom:24px; width:240px; height:180px; border-radius: 12px; border: 2px solid #000; opacity: .2;"></video>
+            <canvas id="snapshot" width="640" height="480" style="display:none;"></canvas>
+        </div>
+    </div>
+    
+    <script>
+        // 초등학생도 이해할 수 있도록 쉬운 말로 주석을 달아두었어요!
+        // 1) 서버 주소를 적어둡니다. (Flask 서버가 이 주소로 열려있어요)
+        const API_BASE = 'http://localhost:5000';
+        
+        // 2) 화면의 문구와 카메라 요소를 찾아요
+        const $video = document.getElementById('camera');
+        const $canvas = document.getElementById('snapshot');
+        
+        let isDetecting = false;
+        let progress = 0;
+        let analyzedAvg = null; // 서버에서 받은 나이 평균을 여기에 저장할게요
+        
+        function startAgeDetection() {
+            if (isDetecting) return;
+            
+            isDetecting = true;
+            progress = 0;
+            
+            // 진행률 바 애니메이션 시작 (더 천천히)
+            const progressFill = document.getElementById('progressFill');
+            const statusText = document.querySelector('.status-text');
+            
+            const progressInterval = setInterval(() => {
+                progress += 2; // 5 → 2로 줄여서 더 천천히
+                progressFill.style.width = progress + '%';
+                
+                // 진행률이 90%까지만 가고, 실제 분석 완료 후 100%로 완성
+                if (progress >= 90) {
+                    clearInterval(progressInterval);
+                    // 여기서는 showDetectionComplete()를 호출하지 않음
+                }
+            }, 150); // 100ms → 150ms로 늘려서 더 천천히
+            
+            // 상태 텍스트 업데이트
+            setTimeout(() => {
+                statusText.innerHTML = '얼굴 인식 중...<br/>잠시만 기다려주세요';
+            }, 800);
+            
+            setTimeout(() => {
+                statusText.innerHTML = '연령 분석 중...<br/>거의 완료되었습니다';
+            }, 2000); // 1500 → 2000으로 늘림
+
+            // 3) 실제로 카메라로 사진을 찍고, 서버에 보내서 나이를 분석해요
+            (async () => {
+                try {
+                    const shots = [];
+                    // 사진을 2장 찍어서 더 정확하게 해요
+                    for (let i = 0; i < 2; i++) {
+                        const dataURL = await captureDataURL();
+                        shots.push(dataURL);
+                    }
+                    const result = await analyzeOnServer(shots);
+                    analyzedAvg = Math.round((result.average || 0));
+                    
+                    // 실제 분석이 완료된 후에만 진행률을 100%로 만들고 완료 처리
+                    progressFill.style.width = '100%';
+                    showDetectionComplete();
+                } catch (error) {
+                    // 에러가 나도 걱정하지 마세요. 기본값 0으로 진행해요 (안전하게)
+                    analyzedAvg = 0;
+                    console.error(error);
+                    
+                    // 에러가 나도 진행률을 100%로 만들고 완료 처리
+                    progressFill.style.width = '100%';
+                    showDetectionComplete();
+                }
+            })();
+        }
+        
+        function showDetectionComplete() {
+            const statusText = document.querySelector('.status-text');
+            const successEffect = document.getElementById('successEffect');
+            
+            // 상태 텍스트 변경
+            statusText.innerHTML = '연령 판정 완료!<br/>주문을 시작합니다';
+            
+            // 성공 효과 표시
+            successEffect.classList.remove('hidden');
+            
+            // 1초 후 자동으로 다음 화면으로 이동 (분석된 평균 나이를 기준으로 분기)
+            setTimeout(() => {
+                const avg = typeof analyzedAvg === 'number' ? analyzedAvg : 0;
+                goNext(avg);
+            }, 1000);
+        }
+
+        // 4) 서버로 사진을 보내서 평균 나이를 받아요
+        async function analyzeOnServer(images){
+            // 서버에 JSON으로 보냅니다. { images: [dataURL, dataURL] }
+            const res = await fetch(API_BASE + '/analyze-age', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ images })
+            });
+            if (!res.ok) throw new Error('서버 에러: ' + res.status);
+            return await res.json();
+        }
+
+        async function captureDataURL(){
+            // 카메라 권한을 요청하고, 화면에 보이지 않게 영상을 받아요
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'user' }, audio:false });
+            $video.srcObject = stream;
+            // 카메라가 켜질 시간을 조금 기다려요
+            await new Promise(r => setTimeout(r, 900));
+            // 비디오의 실제 너비/높이를 가져와요 (없으면 기본값 사용)
+            const w = $video.videoWidth || 640; 
+            const h = $video.videoHeight || 480;
+            $canvas.width = w; 
+            $canvas.height = h;
+            // 캔버스에 현재 화면을 그려요 (사진 찍기)
+            $canvas.getContext('2d').drawImage($video, 0, 0, w, h);
+            // Base64 JPEG 데이터로 바꿔서 서버에 보낼 준비를 해요
+            const dataURL = $canvas.toDataURL('image/jpeg', 0.9);
+            // 카메라 끄기 (안전하게 자원 해제)
+            stream.getTracks().forEach(t => t.stop());
+            return dataURL;
+        }
+
+        // 6) 평균 나이가 65세 이상이면 order-type, 아니면 order-type2로 이동해요
+        function goNext(avg){
+            try { sessionStorage.setItem('ageAvg', String(avg)); } catch (e) {}
+            const isSenior = avg >= 65;
+            if (isSenior) {
+                try { sessionStorage.setItem('ttsTarget', 'choice_takeout'); } catch (e) {}
+            }
+            const target = isSenior ? 'order-type.html' : 'order-type2.html';
+            // 부드럽게 화면을 사라지게 한 뒤 이동해요
+            document.body.style.transition = 'opacity 0.5s ease';
+            document.body.style.opacity = '0';
+            setTimeout(() => { window.location.href = target; }, 500);
+        }
+        
+        // 키보드 단축키 지원
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' || event.key === ' ' || event.key === 'Space') {
+                startAgeDetection();
+            }
+        });
+        
+        // 터치 이벤트 개선
+        document.addEventListener('touchstart', function(event) {
+            event.target.style.transform = 'scale(0.98)';
+        });
+        
+        document.addEventListener('touchend', function(event) {
+            event.target.style.transform = 'scale(1)';
+            startAgeDetection();
+        });
+        
+        // 페이지 로드 시 자동 시작(메인에서 넘어온 플래그 확인)
+        window.addEventListener('load', function() {
+            try {
+                const auto = sessionStorage.getItem('autoStartDetection');
+                if (auto === '1') {
+                    sessionStorage.removeItem('autoStartDetection');
+                    startAgeDetection();
+                }
+            } catch (e) {}
+        });
+    </script>
+</body>
+</html>

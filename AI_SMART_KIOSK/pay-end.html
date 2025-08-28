@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주문 완료</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f0f0;
+        }
+        
+        /* 키오스크 프레임 스타일 (order-type.html과 동일) */
+        .kiosk-frame {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 1080px; /* 기준 가로(9:16) */
+            height: 1920px;  /* 기준 세로(9:16) */
+            background: #FFF9E7; /* 키오스크 안쪽 배경 */
+            border: 12px solid #222; /* 베젤 느낌 */
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 뷰포트가 더 작으면 비율을 유지하며 스케일 다운 (세로형 9:16) */
+        @media (max-aspect-ratio: 9/16) {
+            .kiosk-frame {
+                /* 화면이 아주 좁은 경우: 가로 길이에 맞춰 축소 */
+                transform: translate(-50%, -50%) scale(calc((100vw - 24px) / 1080));
+            }
+        }
+        @media (min-aspect-ratio: 9/16) {
+            .kiosk-frame {
+                /* 화면이 비교적 넓은 경우: 세로 길이에 맞춰 축소 */
+                transform: translate(-50%, -50%) scale(calc((100vh - 24px) / 1920));
+            }
+        }
+        
+        .kiosk-container {
+            width: 100% !important; 
+            height: 100% !important; 
+            position: relative;
+            background: #F3FA8F; 
+            overflow: hidden; 
+            border-radius: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            /* 외곽선에 완전히 꽉 차도록 강제 적용 */
+            margin: 0 !important; 
+            padding: 0 !important;
+            outline: none; 
+            outline-offset: 0; 
+            box-shadow: none;
+            /* 외곽선 경계에 딱 맞춤 */
+            min-width: 100%; 
+            min-height: 100%;
+            max-width: 100%; 
+            max-height: 100%;
+        }
+        
+        .top-section {
+            width: 1080px;
+            height: 300px;
+            position: relative;
+            background: #D5DF8A;
+            box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+        }
+        
+        .step-indicators {
+            padding: 10px 5px;
+            left: 0px;
+            top: 15px;
+            position: absolute;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            display: inline-flex;
+            width: 100%;
+        }
+        
+        .step-indicator {
+            width: 350px;
+            height: 250px;
+            background: #D9D9D9;
+            border-radius: 20px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .step-indicator.active {
+            background: #FF0000;
+            box-shadow: 0 8px 16px rgba(255, 0, 0, 0.4);
+        }
+        
+        .step-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000000;
+            font-size: 48px;
+            font-family: Inter;
+            font-weight: 700;
+            text-align: center;
+            line-height: 1.1;
+            padding: 10px;
+        }
+        
+        .step-indicator.active .step-text {
+            color: #FFFFFF;
+        }
+        
+        .completion-section {
+            width: 1000px;
+            height: 1100px;
+            padding: 100px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+            border-radius: 50px;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            display: flex;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            border: 6px solid rgba(255, 255, 255, 0.3);
+            overflow: hidden;
+        }
+        
+        .completion-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%, rgba(255, 255, 255, 0.1) 100%);
+            pointer-events: none;
+        }
+        
+        .completion-section:hover {
+            transform: scale(1.03);
+            box-shadow: 0 35px 80px rgba(0, 0, 0, 0.4);
+        }
+        
+        .completion-section:active {
+            transform: scale(0.98);
+        }
+        
+        .completion-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+        }
+        
+        .success-icon {
+            font-size: 200px;
+            margin: 0;
+            color: #FFD700;
+            animation: bounce 2s infinite;
+            text-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-25px);
+            }
+            60% {
+                transform: translateY(-15px);
+            }
+        }
+        
+        .completion-text {
+            color: white;
+            font-size: 88px;
+            font-family: Inter;
+            font-weight: 700;
+            word-wrap: break-word;
+            line-height: 1.2;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
+        }
+        
+        .order-number {
+            font-size: 100px;
+            color: #FFD700;
+            font-weight: 900;
+            margin: 15px 0;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 25px 50px;
+            border-radius: 35px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .return-instruction {
+            font-size: 64px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-top: 15px;
+            font-style: normal;
+            font-weight: 500;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px 40px;
+            border-radius: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .bottom-section {
+            position: relative;
+            background: #D5DF8A;
+            overflow: hidden;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            display: inline-flex;
+            width: 100%;
+            height: 297px;
+        }
+        
+        .bottom-button {
+            width: 535px !important;
+            height: 297px !important;
+            border: none !important;
+            cursor: pointer !important;
+            font-size: 60px !important;
+            font-weight: 700 !important;
+            color: #fff !important;
+            transition: transform .3s ease !important;
+        }
+        
+        .bottom-section .bottom-button:first-child {
+            background: linear-gradient(180deg, #304cec 0%, #566ad8 100%);
+        }
+        
+        .bottom-section .bottom-button:nth-child(2) {
+            background: linear-gradient(180deg, #FF6B6B 0%, #D32F2F 100%);
+        }
+        
+        .icon-left, .icon-right {
+            position: absolute;
+            cursor: pointer;
+            transition: transform .2s ease;
+        }
+        
+        .icon-left {
+            width: 110px !important;
+            height: 110px !important;
+            left: 18px !important;
+            top: 50% !important;
+            bottom: auto !important;
+            transform: translateY(-50%) !important;
+            z-index: 2 !important;
+        }
+        
+        .icon-right {
+            width: 110px !important;
+            height: 110px !important;
+            right: 18px !important;
+            top: 50% !important;
+            bottom: auto !important;
+            transform: translateY(-50%) !important;
+            z-index: 2 !important;
+        }
+        
+        .icon-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+        
+        .icon-left:hover, .icon-right:hover {
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .icon-left:active, .icon-right:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+        
+        /* 반응형 디자인 */
+        @media (max-width: 1200px) {
+            .kiosk-container {
+                width: 90vw;
+                height: 90vh;
+                border-radius: 30px;
+            }
+            
+            .completion-section {
+                width: 80vw;
+                height: 60vh;
+                padding: 40px;
+            }
+            
+            .completion-text {
+                font-size: 3rem;
+            }
+            
+            .success-icon {
+                font-size: 6rem;
+            }
+            
+            .order-number {
+                font-size: 2.5rem;
+            }
+            
+            .return-instruction {
+                font-size: 2rem;
+            }
+            
+            .bottom-button {
+                width: 40vw;
+                height: 25vh;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .kiosk-container {
+                width: 95vw;
+                height: 95vh;
+                border-radius: 20px;
+            }
+            
+            .completion-section {
+                width: 90vw;
+                height: 50vh;
+                padding: 20px;
+                border-radius: 25px;
+            }
+            
+            .completion-text {
+                font-size: 2rem;
+            }
+            
+            .success-icon {
+                font-size: 4rem;
+            }
+            
+            .order-number {
+                font-size: 1.8rem;
+            }
+            
+            .return-instruction {
+                font-size: 1.5rem;
+            }
+            
+            .bottom-section {
+                flex-direction: column;
+                height: auto;
+                padding: 20px;
+            }
+            
+            .bottom-button {
+                width: 80vw;
+                height: 15vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="kiosk-frame">
+    <div class="kiosk-container">
+        <!-- 상단 섹션 -->
+        <div class="top-section">
+            <div class="step-indicators">
+                <div class="step-indicator"><div class="step-text">1단계.<br/>메뉴 고르기</div></div>
+                <div class="step-indicator"><div class="step-text">2단계.<br/>옵션 고르기</div></div>
+                <div class="step-indicator active"><div class="step-text">3단계.<br/>결제 하기</div></div>
+            </div>
+        </div>
+        
+        <!-- 주문 완료 섹션 -->
+        <div class="completion-section" onclick="returnToMain()">
+            <div class="completion-content">
+                <div class="success-icon">🎉</div>
+                <div class="completion-text">
+                    주문 완료<br/>
+                    수고하셨습니다<br/>
+                    주문 번호 :
+                </div>
+                <div class="order-number" id="orderNumber">#12345</div>
+                <div class="return-instruction">화면을 터치하면 처음으로 돌아갑니다</div>
+            </div>
+        </div>
+        
+        <!-- 하단 섹션 -->
+        <div class="bottom-section">
+            <button class="bottom-button" onclick="returnToMain()">처음으로</button>
+            <button class="bottom-button" onclick="callStaff()">직원호출</button>
+            
+            <!-- 왼쪽 아이콘 -->
+            <div class="icon-left" onclick="handleIconClick('왼쪽')">
+                <img class="icon-img" src="./img/pngegg (1).png" alt="뒤로가기 아이콘" />
+            </div>
+            
+            <!-- 오른쪽 아이콘 -->
+            <div class="icon-right" onclick="handleIconClick('오른쪽')">
+                <img class="icon-img" src="./img/127164.png" alt="다음 아이콘" />
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- TTS 트리거용 숨김 버튼 (주문 완료 안내) -->
+    <button id="fin_order" style="display:none"></button>
+
+    <!-- TTS 스크립트 로드 -->
+    <script src="tts(2차 수정)/tts_2.js"></script>
+
+    <script>
+        // 주문 번호 생성
+        function generateOrderNumber() {
+            const random = Math.floor(Math.random() * 900) + 100; // 100~999 범위의 3자리 숫자
+            return `#${random}`;
+        }
+        
+        // 메인 화면으로 돌아가기
+        function returnToMain() {
+            alert('주문이 완료되었습니다! 처음 화면으로 돌아갑니다.');
+            window.location.href = 'main.html';
+        }
+        
+        // 직원 호출
+        function callStaff() {
+            alert('직원을 호출했습니다. 잠시만 기다려주세요. 🚨');
+        }
+        
+        // 아이콘 클릭 처리
+        function handleIconClick(iconName) {
+            console.log(`${iconName} 아이콘이 클릭되었습니다!`);
+            if (iconName === '왼쪽') {
+                // 뒤로 가기 (결제 방식 선택으로)
+                window.location.href = 'pay-method.html';
+            } else if (iconName === '오른쪽') {
+                // 처음으로 돌아가기
+                returnToMain();
+            }
+        }
+        
+        // 키보드 단축키 지원
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' || event.key === ' ' || event.key === 'Space') {
+                returnToMain();
+            } else if (event.key === 'Escape') {
+                // 뒤로 가기
+                window.location.href = 'pay-method.html';
+            }
+        });
+        
+        // 터치 이벤트 개선
+        document.addEventListener('touchstart', function(event) {
+            if (event.target.classList.contains('completion-section') || 
+                event.target.classList.contains('bottom-button') ||
+                event.target.classList.contains('icon-left') ||
+                event.target.classList.contains('icon-right')) {
+                event.target.style.transform = 'scale(0.98)';
+            }
+        });
+        
+        document.addEventListener('touchend', function(event) {
+            if (event.target.classList.contains('completion-section') || 
+                event.target.classList.contains('bottom-button') ||
+                event.target.classList.contains('icon-left') ||
+                event.target.classList.contains('icon-right')) {
+                event.target.style.transform = 'scale(1)';
+            }
+        });
+        
+        // 페이지 로드 시 초기화 및 TTS 재생
+        window.addEventListener('load', function() {
+            // 랜덤 주문 번호 생성
+            const orderNumber = generateOrderNumber();
+            document.getElementById('orderNumber').textContent = orderNumber;
+            
+            // 주문 완료 안내 TTS 재생
+            const ttsButton = document.getElementById('fin_order');
+            if (ttsButton) { ttsButton.click(); }
+
+            console.log('주문이 완료되었습니다! 화면을 터치하면 처음으로 돌아갑니다.');
+        });
+    </script>
+</body>
+</html>

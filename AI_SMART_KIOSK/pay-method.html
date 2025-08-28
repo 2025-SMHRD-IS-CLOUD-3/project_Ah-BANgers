@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>결제 방식 선택</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f0f0;
+        }
+        
+        /* 키오스크 프레임 스타일 (order-type.html과 동일) */
+        .kiosk-frame {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 1080px; /* 기준 가로(9:16) */
+            height: 1920px;  /* 기준 세로(9:16) */
+            background: #FFF9E7; /* 키오스크 안쪽 배경 */
+            border: 12px solid #222; /* 베젤 느낌 */
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 뷰포트가 더 작으면 비율을 유지하며 스케일 다운 (세로형 9:16) */
+        @media (max-aspect-ratio: 9/16) {
+            .kiosk-frame {
+                /* 화면이 아주 좁은 경우: 가로 길이에 맞춰 축소 */
+                transform: translate(-50%, -50%) scale(calc((100vw - 24px) / 1080));
+            }
+        }
+        @media (min-aspect-ratio: 9/16) {
+            .kiosk-frame {
+                /* 화면이 비교적 넓은 경우: 세로 길이에 맞춰 축소 */
+                transform: translate(-50%, -50%) scale(calc((100vh - 24px) / 1920));
+            }
+        }
+        
+        .kiosk-container {
+            width: 100% !important; 
+            height: 100% !important; 
+            position: relative;
+            background: #F3FA8F; 
+            overflow: hidden; 
+            border-radius: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            /* 외곽선에 완전히 꽉 차도록 강제 적용 */
+            margin: 0 !important; 
+            padding: 0 !important;
+            outline: none; 
+            outline-offset: 0; 
+            box-shadow: none;
+            /* 외곽선 경계에 딱 맞춤 */
+            min-width: 100%; 
+            min-height: 100%;
+            max-width: 100%; 
+            max-height: 100%;
+        }
+        
+        .top-section {
+            width: 100%;
+            height: 300px;
+            position: relative;
+            background: #D5DF8A;
+            box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+        }
+        
+        .step-indicators {
+            padding: 10px 5px;
+            left: 0px;
+            top: 15px;
+            position: absolute;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            display: inline-flex;
+            width: 100%;
+        }
+        
+        .step-item {
+            width: 350px;
+            height: 250px;
+            background: #D9D9D9;
+            border-radius: 20px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .step-item.active {
+            background: #FF0000;
+            box-shadow: 0 8px 16px rgba(255, 0, 0, 0.4);
+        }
+        
+        .step-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000000;
+            font-size: 48px;
+            font-family: Inter;
+            font-weight: 700;
+            text-align: center;
+            line-height: 1.1;
+            padding: 10px;
+        }
+        
+        .step-item.active .step-text {
+            color: #FFFFFF;
+        }
+        
+        .payment-section {
+            flex: 1;
+            width: 1000px;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .payment-option {
+            width: 100%;
+            height: 500px;
+            background: #D9D9D9;
+            border: none;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            font-size: 120px;
+            font-weight: 900;
+            color: white;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+            border: 8px solid transparent;
+        }
+        
+        .payment-option:hover {
+            transform: scale(1.05);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+        }
+        
+        .payment-option:active {
+            transform: scale(0.98);
+        }
+        
+        .payment-option.card {
+            background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+            border-color: #2E5B8A;
+        }
+        
+        .payment-option.coupon {
+            background: linear-gradient(135deg, #50C878 0%, #3CB371 100%);
+            border-color: #2E8B57;
+        }
+        
+        .payment-option.card:hover {
+            background: linear-gradient(135deg, #5A9AE2 0%, #4A8ACD 100%);
+            box-shadow: 0 15px 40px rgba(74, 144, 226, 0.4);
+        }
+        
+        .payment-option.coupon:hover {
+            background: linear-gradient(135deg, #60D888 0%, #4CC381 100%);
+            box-shadow: 0 15px 40px rgba(80, 200, 120, 0.4);
+        }
+        
+        .payment-icon {
+            position: absolute;
+            right: 60px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 150px;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 80px;
+            backdrop-filter: blur(10px);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .bottom-section {
+            flex: 0 0 297px; 
+            width: 100%; 
+            position: relative; 
+            background: #D5DF8A;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 5px; 
+            overflow: hidden;
+            margin: 0; /* 외곽선에 맞춰 여백 제거 */
+            min-width: 100%; /* 최소 너비 보장 */
+        }
+                .bottom-button {
+            width: 535px !important;
+            height: 297px !important;
+            border: none !important;
+            cursor: pointer !important;
+            font-size: 60px !important;
+            font-weight: 700 !important;
+            color: #fff !important;
+            transition: transform .3s ease !important;
+        }
+        .bottom-section .bottom-button:first-child { 
+            background: linear-gradient(180deg, #304cec 0%, #566ad8 100%); 
+        }
+        .bottom-section .bottom-button:nth-child(2) { 
+            background: linear-gradient(180deg, #FF6B6B 0%, #D32F2F 100%); 
+        }
+        .bottom-button:hover { 
+            transform: scale(1.02); 
+        }
+        .bottom-button:active { 
+            transform: scale(0.98); 
+        }
+
+        /* 하단 아이콘 이미지 */
+        .icon-left, .icon-right { 
+            position: absolute; 
+            cursor: pointer; 
+            transition: transform .2s ease; 
+            z-index: 2; 
+        }
+        /* 글씨 옆에 보이도록 수평 중앙선 근처로 올림 */
+        .icon-left { 
+            width: 110px !important; 
+            height: 110px !important; 
+            left: 18px !important; 
+            top: 50% !important; 
+            bottom: auto !important; 
+            transform: translateY(-50%) !important; 
+            z-index: 2 !important;
+        }
+        .icon-right { 
+            width: 110px !important; 
+            height: 110px !important; 
+            right: 18px !important; 
+            top: 50% !important; 
+            bottom: auto !important; 
+            transform: translateY(-50%) !important; 
+            z-index: 2 !important;
+        }
+        .icon-img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; 
+            display: block; 
+        }
+        .icon-left:hover, .icon-right:hover { 
+            transform: scale(1.08); 
+        }
+        .icon-left:active, .icon-right:active { 
+            transform: scale(0.95); 
+        }
+        
+        /* 직원호출 모달 스타일 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none; /* 기본적으로 숨김 */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+        
+        .staff-modal {
+            width: 1000px;
+            height: 800px;
+            background: #FFF9E7;
+            border-radius: 50px;
+            outline: 15px #FF6B6B solid;
+            outline-offset: -15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        .staff-modal-icon {
+            font-size: 120px;
+            margin-bottom: 40px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .staff-modal-title {
+            font-size: 72px;
+            font-weight: bold;
+            margin-bottom: 40px;
+            color: #FF6B6B;
+        }
+        
+        .staff-modal-message {
+            font-size: 48px;
+            margin-bottom: 60px;
+            color: #333;
+            line-height: 1.4;
+        }
+        
+        .staff-modal-btn {
+            padding: 30px 80px;
+            border: none;
+            border-radius: 40px;
+            font-size: 48px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            background: #4CAF50;
+            color: white;
+            min-width: 200px;
+        }
+        
+        .staff-modal-btn:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        
+        .staff-modal-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <div class="kiosk-frame">
+    <div class="kiosk-container">
+        <div class="top-section">
+            <div class="step-indicators">
+                <div class="step-item"><div class="step-text">1단계.<br/>메뉴 고르기</div></div>
+                <div class="step-item"><div class="step-text">2단계.<br/>옵션 고르기</div></div>
+                <div class="step-item active"><div class="step-text">3단계.<br/>결제 하기</div></div>
+            </div>
+        </div>
+        
+        <div class="payment-section">
+            <button class="payment-option card" onclick="selectPayment('card')">
+                카드결제
+                <div class="payment-icon">💳</div>
+            </button>
+            <button class="payment-option coupon" onclick="selectPayment('coupon')">
+                쿠폰 사용
+                <div class="payment-icon">🎫</div>
+            </button>
+        </div>
+        
+        <div class="bottom-section">
+            <button class="bottom-button" onclick="goBack()">뒤로가기</button>
+            <button class="bottom-button" onclick="callStaff()">직원호출</button>
+            
+            <!-- 왼쪽 아이콘 -->
+            <div class="icon-left" onclick="goBack()">
+                <img class="icon-img" src="./img/pngegg (1).png" alt="뒤로가기 아이콘" />
+            </div>
+            
+            <!-- 오른쪽 아이콘 -->
+            <div class="icon-right" onclick="selectPayment('card')">
+                <img class="icon-img" src="./img/127164.png" alt="다음 아이콘" />
+            </div>
+        </div>
+    </div>
+
+    <!-- 모달 오버레이 -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-title" id="modalTitle">결제 완료</div>
+            <div class="modal-message" id="modalMessage">결제가 성공적으로 완료되었습니다!</div>
+            <div class="modal-buttons">
+                <button class="modal-btn primary" onclick="completePayment()">완료</button>
+                <button class="modal-btn secondary" onclick="closeModal()">취소</button>
+    </div>
+  </div>
+    </div>
+
+    <!-- 직원호출 모달 -->
+    <div class="modal-overlay" id="staffModalOverlay">
+        <div class="staff-modal">
+            <div class="staff-modal-icon">🚨</div>
+            <div class="staff-modal-title">직원 호출</div>
+            <div class="staff-modal-message">직원을 호출했습니다.<br/>잠시만 기다려주세요.</div>
+            <button class="staff-modal-btn" onclick="closeStaffModal()">확인</button>
+        </div>
+    </div>
+
+    <!-- TTS 트리거용 숨김 버튼들: 결제 안내/카드/쿠폰 -->
+    <button id="choice_payment" style="display:none"></button>
+    <button id="choice_card" style="display:none"></button>
+    <button id="choice_coupon" style="display:none"></button>
+
+    <!-- TTS 스크립트 로드 -->
+    <script src="tts(2차 수정)/tts_2.js"></script>
+
+    <script>
+        // 페이지가 열리면 결제 방법 안내 TTS를 먼저 재생해요
+        window.addEventListener('load', function(){
+            const ttsBtn = document.getElementById('choice_payment');
+            if (ttsBtn) { ttsBtn.click(); }
+        });
+
+        function selectPayment(paymentType) {
+            if (paymentType === 'card') {
+                // 카드 결제 선택 TTS를 먼저 재생하고, 조금 있다가 페이지 이동해요
+                const ttsBtn = document.getElementById('choice_card');
+                if (ttsBtn) { ttsBtn.click(); }
+                setTimeout(() => { window.location.href = 'pay-card.html'; }, 900);
+            } else if (paymentType === 'coupon') {
+                // 쿠폰 사용 선택 TTS를 먼저 재생하고, 조금 있다가 페이지 이동해요
+                const ttsBtn = document.getElementById('choice_coupon');
+                if (ttsBtn) { ttsBtn.click(); }
+                setTimeout(() => { window.location.href = 'pay_coupon.html'; }, 900);
+            }
+        }
+        
+        function goBack() {
+            // 이전 화면으로 돌아가기 (메뉴 선택 화면)
+            window.location.href = 'menu-selection.html';
+        }
+        
+        function callStaff() {
+            // 커스텀 직원호출 모달 표시
+            document.getElementById('staffModalOverlay').classList.add('show');
+        }
+        
+        function closeStaffModal() {
+            document.getElementById('staffModalOverlay').classList.remove('show');
+        }
+        
+        // 키보드 단축키 지원
+        document.addEventListener('keydown', function(event) {
+            if (event.key === '1') {
+                selectPayment('card');
+            } else if (event.key === '2') {
+                selectPayment('coupon');
+            } else if (event.key === 'Escape') {
+                goBack();
+            }
+        });
+        
+        // 터치 이벤트 개선
+        document.addEventListener('touchstart', function(event) {
+            if (event.target.classList.contains('payment-option') || 
+                event.target.classList.contains('bottom-button') ||
+                event.target.classList.contains('icon-left') ||
+                event.target.classList.contains('icon-right')) {
+                event.target.style.transform = 'scale(0.98)';
+            }
+        });
+        
+        document.addEventListener('touchend', function(event) {
+            if (event.target.classList.contains('payment-option') || 
+                event.target.classList.contains('bottom-button') ||
+                event.target.classList.contains('icon-left') ||
+                event.target.classList.contains('icon-right')) {
+                event.target.style.transform = 'scale(1)';
+            }
+        });
+    </script>
+</body>
+</html>

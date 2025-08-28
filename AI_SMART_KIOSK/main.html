@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A.I KIOSK CAFE - 메인 화면</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f0f0;
+            cursor: pointer;
+        }
+        
+        .main-container {
+            width: 100% !important;
+            height: 100% !important;
+            position: relative;
+            background: #FFF9E7;
+            overflow: hidden;
+            border-radius: 0;
+            outline: none;
+            outline-offset: 0;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            /* 외곽선에 완전히 꽉 차도록 강제 적용 */
+            margin: 0 !important;
+            padding: 0 !important;
+            /* 외곽선 경계에 딱 맞춤 */
+            min-width: 100%;
+            min-height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        .main-container:hover {
+            transform: scale(1.02);
+        }
+        
+        .main-container:active {
+            transform: scale(0.98);
+        }
+        
+        .touch-area {
+            width: 858px;
+            height: 360px;
+            left: 111px;
+            top: 1375px;
+            position: absolute;
+            background: #FFA30F;
+            border-radius: 50px;
+            border: 10px black solid;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .touch-area:hover {
+            background: #FF8C00;
+            transform: scale(1.05);
+        }
+        
+        .touch-text {
+            color: black;
+            font-size: 96px;
+            font-family: Inter, sans-serif;
+            font-weight: 600;
+            text-align: center;
+            line-height: 1.2;
+        }
+        
+        .title {
+            width: 602px;
+            height: 291px;
+            left: 239px;
+            top: 214px;
+            position: absolute;
+            text-align: center;
+            color: black;
+            font-size: 140px;
+            font-family: 'Inter', Arial, sans-serif;
+            font-weight: 700;
+            word-wrap: break-word;
+            line-height: 1.2;
+        }
+        
+        .logo {
+            width: 363px;
+            height: 363px;
+            left: 359px;
+            top: 736px;
+            position: absolute;
+            border-radius: 100px;
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* 이미지가 넘치지 않도록 */
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .logo img {
+            width: 80%;
+            height: 80%;
+            object-fit: contain; /* 이미지 비율 유지 */
+        }
+        
+        .logo:hover {
+            transform: scale(1.1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        
+        /* 반응형 디자인 */
+        @media (max-width: 1200px) {
+            .main-container {
+                width: 90vw;
+                height: 90vh;
+                border-radius: 30px;
+            }
+            
+            .title {
+                font-size: 4rem;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+            
+            .logo {
+                width: 200px;
+                height: 200px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+            
+            .touch-area {
+                width: 80vw;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .main-container {
+                width: 95vw;
+                height: 95vh;
+                border-radius: 20px;
+            }
+            
+            .title {
+                font-size: 3rem;
+                top: 100px;
+            }
+            
+            .logo {
+                width: 150px;
+                height: 150px;
+                top: 300px;
+            }
+            
+            .touch-area {
+                top: 70vh;
+                height: 200px;
+            }
+            
+            .touch-text {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="kiosk-frame">
+        <div class="main-container" onclick="goToLoading()">
+            <!-- 터치 영역 -->
+            <div class="touch-area" onclick="goToLoading()">
+                <div class="touch-text">화면을 만져보세요</div>
+            </div>
+            
+            <!-- 메인 타이틀 -->
+            <div class="title">A.I<br/>KIOSK<br/>CAFE</div>
+            
+            <!-- 로고 (이미지 적용 가능) -->
+            <div class="logo" onclick="goToLoading()">
+                <img src="./img/Remove the Wi-Fi sha.png" alt="카페 로고">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 로딩 화면으로 이동 (터치 시 카메라 권한 먼저 요청 → 자동 촬영 보장)
+        async function goToLoading() {
+            try {
+                // 로딩 화면에서 자동으로 연령 분석을 시작하도록 표시
+                sessionStorage.setItem('autoStartDetection', '1');
+            } catch (e) {}
+
+            try {
+                // 여기서 권한 팝업을 처리해 두면 다음 화면에서 추가 터치가 필요 없어요
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+                if (stream && stream.getTracks) {
+                    // 곧 페이지를 이동하므로 트랙을 정지시켜 자원 낭비를 막아요
+                    stream.getTracks().forEach(function(track){ try { track.stop(); } catch (e) {} });
+                }
+            } catch (error) {
+                // 권한을 거부해도 이동은 계속합니다 (로딩 화면에서 수동 시작 가능)
+            }
+
+            window.location.href = 'loading.html';
+        }
+        
+        // 키보드 단축키 지원
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' || event.key === ' ' || event.key === 'Space') {
+                goToLoading();
+            }
+        });
+        
+        // 터치 이벤트 개선
+        document.addEventListener('touchstart', function(event) {
+            event.target.style.transform = 'scale(0.98)';
+        });
+        
+        document.addEventListener('touchend', function(event) {
+            event.target.style.transform = 'scale(1)';
+            goToLoading();
+        });
+        
+        // 페이지 로드 시 안내 메시지
+        window.addEventListener('load', function() {
+            // 새로 실행할 때마다 장바구니 초기화
+            localStorage.removeItem('kioskCart');
+            console.log('장바구니가 초기화되었습니다.');
+            console.log('화면을 클릭하거나 터치하여 주문을 시작하세요!');
+        });
+    </script>
+</body>
+</html>

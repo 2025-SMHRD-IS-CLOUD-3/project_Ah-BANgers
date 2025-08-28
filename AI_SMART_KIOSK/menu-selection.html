@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>메뉴 카테고리 선택</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f0f0;
+        }
+        
+        .kiosk-container {
+            width: 100% !important; height: 100% !important; position: relative;
+            background: #F3FA8F; overflow: hidden; border-radius: 0;
+            display: flex; flex-direction: column;
+            /* 외곽선에 완전히 꽉 차도록 강제 적용 */
+            margin: 0 !important; padding: 0 !important;
+            outline: none; outline-offset: 0; box-shadow: none;
+            /* 외곽선 경계에 딱 맞춤 */
+            min-width: 100%; min-height: 100%;
+            max-width: 100%; max-height: 100%;
+        }
+        
+        .top-section {
+            flex: 0 0 300px; width: 100%; position: relative; background: #D5DF8A;
+            box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25); overflow: hidden;
+            margin: 0; min-width: 100%;
+        }
+        
+        .step-cards {
+            padding: 10px 5px;
+            left: 0px;
+            top: 15px;
+            position: absolute;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            display: inline-flex;
+            width: 100%;
+        }
+        
+        .step-card {
+            width: 350px;
+            height: 250px;
+            background: #D9D9D9;
+            border-radius: 20px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .step-card.active {
+            background: #FF0000;
+            box-shadow: 0 8px 16px rgba(255, 0, 0, 0.4);
+        }
+        
+        .step-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000000;
+            font-size: 48px;
+            font-family: Inter;
+            font-weight: 700;
+            text-align: center;
+            line-height: 1.1;
+            padding: 10px;
+        }
+        
+        .step-card.active .step-text {
+            color: #FFFFFF;
+        }
+        
+        .menu-button {
+            width: 750px;
+            height: 330px;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 110px;
+            font-weight: 800;
+            color: white;
+            position: relative;
+            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .menu-button:hover { transform: translateY(-4px) scale(1.02); }
+        .menu-button:active { transform: translateY(0) scale(0.98); }
+        
+        .coffee-button { background: linear-gradient(180deg, #6F4E37 0%, #3E2A1F 100%); }
+        .tea-button { background: linear-gradient(180deg, #4CAF50 0%, #2E7D32 100%); }
+        .drink-button { background: linear-gradient(180deg, #2196F3 0%, #1565C0 100%); }
+
+        /* 메인 버튼 래퍼 - order-type.html과 동일하게 */
+        .main-buttons {
+            flex: 1 1 auto; /* 남은 공간을 가득 채움 */
+            width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 40px; padding: 24px 40px;
+            margin: 0; /* 외곽선에 맞춰 여백 제거 */
+            min-width: 100%; /* 최소 너비 보장 */
+        }
+        
+        /* 🔹 버튼 오른쪽 하단 작은 텍스트 제거 */
+        .menu-button::after {
+            content: none;
+        }
+        
+        /* 하단 바 - order-type.html과 동일하게 */
+        .bottom-section {
+            flex: 0 0 297px; width: 100%; position: relative; background: #D5DF8A;
+            display: flex; align-items: center; justify-content: center; gap: 5px; overflow: hidden;
+            margin: 0; /* 외곽선에 맞춰 여백 제거 */
+            min-width: 100%; /* 최소 너비 보장 */
+        }
+        .bottom-button { width: 535px; height: 297px; border: none; cursor: pointer; font-size: 60px; font-weight: 700; color: #fff; transition: transform .3s ease; }
+        .bottom-section .bottom-button:first-child { background: linear-gradient(180deg, #304cec 0%, #566ad8 100%); }
+        .bottom-section .bottom-button:nth-child(2) { background: linear-gradient(180deg, #FF6B6B 0%, #D32F2F 100%); }
+        .bottom-button:hover { transform: scale(1.02); }
+        .bottom-button:active { transform: scale(0.98); }
+
+        /* 하단 아이콘 이미지 - order-type.html과 동일하게 */
+        .icon-left, .icon-right { position: absolute; cursor: pointer; transition: transform .2s ease; z-index: 2; }
+        /* 글씨 옆에 보이도록 수평 중앙선 근처로 올림 */
+        .icon-left { width: 110px; height: 110px; left: 18px; top: 50%; bottom: auto; transform: translateY(-50%); }
+        .icon-right { width: 110px; height: 110px; right: 18px; top: 50%; bottom: auto; transform: translateY(-50%); }
+        .icon-img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .icon-left:hover, .icon-right:hover { transform: scale(1.08); }
+        .icon-left:active, .icon-right:active { transform: scale(0.95); }
+
+        /* 직원호출 모달 스타일 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-overlay.show { display: flex; }
+        .staff-modal {
+            width: 1000px;
+            height: 800px;
+            background: #FFF9E7;
+            border-radius: 50px;
+            outline: 15px #FF6B6B solid;
+            outline-offset: -15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        .staff-modal-icon { font-size: 120px; margin-bottom: 40px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .staff-modal-title { font-size: 72px; font-weight: bold; margin-bottom: 40px; color: #FF6B6B; }
+        .staff-modal-message { font-size: 48px; margin-bottom: 60px; color: #333; line-height: 1.4; }
+        .staff-modal-btn {
+            padding: 30px 80px;
+            border: none;
+            border-radius: 40px;
+            font-size: 48px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            background: #4CAF50;
+            color: white;
+            min-width: 200px;
+        }
+        .staff-modal-btn:hover { background: #45a049; transform: scale(1.05); }
+        .staff-modal-btn:active { transform: scale(0.98); }
+    </style>
+</head>
+<body>
+    <div class="kiosk-frame">
+    <div class="kiosk-container">
+        <!-- 상단 섹션 - 3개 메뉴 카드 -->
+        <div class="top-section">
+            <div class="step-cards">
+                <div class="step-card active"><div class="step-text">1단계.<br/>메뉴 고르기</div></div>
+                <div class="step-card"><div class="step-text">2단계.<br/>옵션 고르기</div></div>
+                <div class="step-card"><div class="step-text">3단계.<br/>결제 하기</div></div>
+            </div>
+        </div>
+
+        <!-- 메뉴 카테고리 버튼들 - order-type.html과 동일한 구조 -->
+        <div class="main-buttons">
+            <button id="menu_coffee" class="menu-button coffee-button" onclick="goToMenuList('coffee')">커피</button>
+            <button id="menu_tea" class="menu-button tea-button" onclick="goToMenuList('tea')">차</button>
+            <button id="menu_drink" class="menu-button drink-button" onclick="goToMenuList('drink')">음료</button>
+        </div>
+
+        <!-- 하단 섹션 -->
+        <div class="bottom-section">
+            <button class="bottom-button" onclick="goBack()">뒤로가기</button>
+            <button id="help_staff" class="bottom-button" onclick="callStaff()">직원 호출</button>
+
+            <!-- 왼쪽 아이콘 -->
+            <div class="icon-left" onclick="handleIconClick('왼쪽')">
+                <img class="icon-img" src="./img/pngegg (1).png" alt="뒤로가기 아이콘" />
+            </div>
+            
+            <!-- 오른쪽 아이콘 -->
+            <div class="icon-right" onclick="handleIconClick('오른쪽')">
+                <img class="icon-img" src="./img/127164.png" alt="다음 아이콘" />
+            </div>
+        </div>
+    </div>
+
+    <!-- 직원호출 모달 -->
+    <div class="modal-overlay" id="staffModalOverlay">
+        <div class="staff-modal">
+            <div class="staff-modal-icon">🚨</div>
+            <div class="staff-modal-title">직원 호출</div>
+            <div class="staff-modal-message">직원을 호출했습니다.<br/>잠시만 기다려주세요.</div>
+            <button class="staff-modal-btn" onclick="closeStaffModal()">확인</button>
+        </div>
+    </div>
+    </div>
+
+    <script src="tts(2차 수정)/tts_2.js"></script>
+    <script>
+        function goToMenuList(category) {
+            // TTS가 시작될 시간을 확보한 뒤 페이지 이동
+            setTimeout(() => {
+                switch(category) {
+                    case 'coffee': window.location.href = 'menu-coffee.html'; break;
+                    case 'tea': window.location.href = 'menu-tea.html'; break;
+                    case 'drink': window.location.href = 'menu-drink.html'; break;
+                }
+            }, 900);
+        }
+        function goBack() { window.location.href = 'order-type.html'; }
+        function callStaff() { document.getElementById('staffModalOverlay').classList.add('show'); }
+        function closeStaffModal() { document.getElementById('staffModalOverlay').classList.remove('show'); }
+        function handleIconClick(iconName) {
+            if (iconName === '왼쪽') goBack();
+            else if (iconName === '오른쪽') goToMenuList('coffee');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주문 방식 선택</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; background: #f0f0f0;
+        }
+
+        .kiosk-container {
+            width: 100% !important; height: 100% !important; position: relative;
+            background: #F3FA8F; overflow: hidden; border-radius: 0;
+            display: flex; flex-direction: column;
+            /* 외곽선에 완전히 꽉 차도록 강제 적용 */
+            margin: 0 !important; padding: 0 !important;
+            outline: none; outline-offset: 0; box-shadow: none;
+            /* 외곽선 경계에 딱 맞춤 */
+            min-width: 100%; min-height: 100%;
+            max-width: 100%; max-height: 100%;
+        }
+
+        /* 상단 헤더 영역 */
+        .top-section {
+            flex: 0 0 320px; /* 고정 높이 */
+            width: 100%; position: relative; background: #D5DF8A;
+            box-shadow: 0 4px 4px rgba(0,0,0,0.25);
+            display: flex; align-items: center; justify-content: center; padding: 16px;
+            margin: 0; /* 외곽선에 맞춰 여백 제거 */
+            min-width: 100%; /* 최소 너비 보장 */
+        }
+        .elderly-guide {
+            text-align: center; color: #333;
+            background: rgba(255,255,255,0.95);
+            padding: 24px 48px; border-radius: 30px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            max-width: 100%;
+        }
+        .guide-text { margin-bottom: 20px; color: #d32f2f; font-weight: 800; font-size: 68px; }
+        .guide-subtext { color: #1976d2; font-size: 56px; }
+
+        /* 메인 버튼 래퍼: 화면 중앙 정렬 */
+        .main-buttons {
+            flex: 1 1 auto; /* 남은 공간을 가득 채움 */
+            width: 100%; display: flex; align-items: stretch; justify-content: center;
+            gap: 40px; padding: 24px 40px;
+            margin: 0; /* 외곽선에 맞춰 여백 제거 */
+            min-width: 100%; /* 최소 너비 보장 */
+        }
+        .order-button { position: relative; border: none; background: none; padding: 0; cursor: pointer; transition: transform .3s ease; height: 100%; flex: 1 1 0; max-width: 520px; }
+        .order-button:hover { transform: scale(1.05); }
+        .order-button:active { transform: scale(0.98); }
+
+        .takeout-button, .dinein-button { width: 100%; height: 100%; }
+        .takeout-button .button-bg, .dinein-button .button-bg {
+            position: absolute; inset: 0; border-radius: 60px; box-shadow: 0 12px 30px rgba(0,0,0,0.25); border: 10px solid transparent;
+        }
+        .takeout-button .button-bg { background: #FF6B6B; border-color: #FF4444; box-shadow: 0 12px 30px rgba(255,107,107,0.5); }
+        .dinein-button .button-bg { background: #4A90E2; border-color: #357ABD; box-shadow: 0 12px 30px rgba(74,144,226,0.5); }
+        .button-text { 
+            position: absolute; inset: 0; display:flex; align-items:center; justify-content:center; 
+            color:#fff; font-size:120px; font-weight:800; 
+            /* 4방향 text-shadow로 깔끔한 검정색 외곽선 효과 */
+            text-shadow: 
+                -2px -2px 0 #000,  /* 왼쪽 위 */
+                2px -2px 0 #000,   /* 오른쪽 위 */
+                -2px 2px 0 #000,   /* 왼쪽 아래 */
+                2px 2px 0 #000;    /* 오른쪽 아래 */
+        }
+
+        /* 하단 바 */
+        .bottom-section {
+            flex: 0 0 297px; width: 100%; position: relative; background: #D5DF8A;
+            display: flex; align-items: center; justify-content: center; gap: 5px; overflow: hidden;
+            margin: 0; /* 외곽선에 맞춰 여백 제거 */
+            min-width: 100%; /* 최소 너비 보장 */
+        }
+        .bottom-button { width: 535px; height: 297px; border: none; cursor: pointer; font-size: 60px; font-weight: 700; color: #fff; transition: transform .3s ease; }
+        .bottom-section .bottom-button:first-child { background: linear-gradient(180deg, #304cec 0%, #566ad8 100%); }
+        .bottom-section .bottom-button:nth-child(2) { background: linear-gradient(180deg, #FF6B6B 0%, #D32F2F 100%); }
+        .bottom-button:hover { transform: scale(1.02); }
+        .bottom-button:active { transform: scale(0.98); }
+
+        /* 하단 아이콘 이미지 */
+        .icon-left, .icon-right { position: absolute; cursor: pointer; transition: transform .2s ease; z-index: 2; }
+        /* 글씨 옆에 보이도록 수평 중앙선 근처로 올림 */
+        .icon-left { width: 110px; height: 110px; left: 18px; top: 50%; bottom: auto; transform: translateY(-50%); }
+        .icon-right { width: 110px; height: 110px; right: 18px; top: 50%; bottom: auto; transform: translateY(-50%); }
+        .icon-img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .icon-left:hover, .icon-right:hover { transform: scale(1.08); }
+        .icon-left:active, .icon-right:active { transform: scale(0.95); }
+
+        /* 직원호출 모달 */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.show { display: flex; }
+        .staff-modal { width: 1000px; height: 800px; background: #FFF9E7; border-radius: 50px; outline: 15px #FF6B6B solid; outline-offset: -15px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px; text-align:center; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        .staff-modal-icon { font-size: 120px; margin-bottom: 40px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%{transform:scale(1);} 50%{transform:scale(1.1);} 100%{transform:scale(1);} }
+        .staff-modal-title { font-size: 72px; font-weight: bold; margin-bottom: 40px; color: #FF6B6B; }
+        .staff-modal-message { font-size: 48px; margin-bottom: 60px; color: #333; line-height: 1.4; }
+        .staff-modal-btn { padding: 30px 80px; border: none; border-radius: 40px; font-size: 48px; font-weight: 800; cursor: pointer; transition: .3s; background: #4CAF50; color: #fff; min-width: 200px; }
+        .staff-modal-btn:hover { background: #45a049; transform: scale(1.05); }
+        .staff-modal-btn:active { transform: scale(0.98); }
+
+        /* 반응형 (필요시) - .bottom-button 스타일 제거하여 기본 스타일 유지 */
+        @media (max-width: 1200px) {
+            .kiosk-container { width: 90vw; height: 90vh; border-radius: 30px; }
+            .order-button { transform: scale(0.85); }
+        }
+        @media (max-width: 768px) {
+            .kiosk-container { width: 95vw; height: 95vh; border-radius: 20px; }
+            .main-buttons { flex-direction: column; gap: 40px; padding: 40px; }
+            .order-button { transform: scale(0.8); }
+            .bottom-section { flex-direction: column; height: auto; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="kiosk-frame">
+    <div class="kiosk-container">
+        <!-- 상단 섹션 -->
+        <div class="top-section">
+            <div class="elderly-guide">
+                <div class="guide-text">주문 방식을 선택해주세요!</div>
+                <div class="guide-subtext">포장 또는 매장 중 하나를 선택해주세요.</div>
+            </div>
+        </div>
+
+        <!-- 메인 버튼들 (화면 중앙 정렬) -->
+        <div class="main-buttons">
+            <button id="take_out" class="order-button takeout-button" onclick="selectOrderType('takeout')">
+                <div class="button-bg"></div>
+                <div class="button-text">포장</div>
+            </button>
+            <button id="eat_in" class="order-button dinein-button" onclick="selectOrderType('dinein')">
+                <div class="button-bg"></div>
+                <div class="button-text">매장</div>
+            </button>
+        </div>
+
+        <!-- 하단 섹션 -->
+        <div class="bottom-section">
+            <button class="bottom-button" onclick="goBack()">뒤로가기</button>
+            <button id="help_staff" class="bottom-button" onclick="callStaff()">직원 호출</button>
+
+            <!-- 왼쪽 아이콘 -->
+            <div class="icon-left" onclick="handleIconClick('왼쪽')">
+                <!-- 기존 파일명으로 복구 -->
+                <img class="icon-img" src="./img/pngegg (1).png" alt="뒤로가기 아이콘" />
+            </div>
+            <!-- 오른쪽 아이콘 -->
+            <div class="icon-right" onclick="handleIconClick('오른쪽')">
+                <img class="icon-img" src="./img/127164.png" alt="다음 아이콘" />
+            </div>
+        </div>
+    </div>
+
+    <!-- TTS 트리거용 숨김 버튼 (주문 방식 안내) -->
+    <button id="choice_takeout" style="display:none" aria-hidden="true" tabindex="-1"></button>
+
+    <!-- 직원호출 모달 -->
+    <div class="modal-overlay" id="staffModalOverlay">
+        <div class="staff-modal">
+            <div class="staff-modal-icon">🚨</div>
+            <div class="staff-modal-title">직원 호출</div>
+            <div class="staff-modal-message">직원을 호출했습니다.<br/>잠시만 기다려주세요.</div>
+            <button class="staff-modal-btn" onclick="closeStaffModal()">확인</button>
+        </div>
+    </div>
+    </div>
+
+    <script src="tts(2차 수정)/tts_2.js"></script>
+    <script>
+        // 페이지가 열리면 주문 방식 안내 TTS를 자동으로 재생해요
+        window.addEventListener('load', function() {
+            const btn = document.getElementById('choice_takeout');
+            if (btn) btn.click();
+        });
+        // 주문 방식 선택: TTS가 재생될 수 있도록 약간 대기 후 이동
+        function selectOrderType(type) {
+            const go = () => { window.location.href = 'menu-selection.html'; };
+            // tts_2.js에서 500ms 지연 후 음성을 시작하므로, 최소 900ms 대기 후 이동
+            setTimeout(go, 900);
+        }
+        function goBack() { window.location.href = 'main.html'; }
+        function callStaff() { document.getElementById('staffModalOverlay').classList.add('show'); }
+        function closeStaffModal() { document.getElementById('staffModalOverlay').classList.remove('show'); }
+        function handleIconClick(iconName) {
+            if (iconName === '왼쪽') { goBack(); }
+            else if (iconName === '오른쪽') { window.location.href = 'menu-selection.html'; }
+        }
+
+        // 단축키/터치 보조
+        document.addEventListener('keydown', function(event) {
+            switch(event.key) {
+                case '1': selectOrderType('takeout'); break;
+                case '2': selectOrderType('dinein'); break;
+                case 'Escape': goBack(); break;
+                case 'Enter': selectOrderType('takeout'); break; // 기본 포장
+            }
+        });
+        document.addEventListener('touchstart', function(event) {
+            const el = event.target.closest('.order-button, .bottom-button, .icon-left, .icon-right');
+            if (el) el.style.transform = 'scale(0.98)';
+        });
+        document.addEventListener('touchend', function(event) {
+            const el = event.target.closest('.order-button, .bottom-button, .icon-left, .icon-right');
+            if (el) el.style.transform = '';
+        });
+    </script>
+</body>
+</html>
