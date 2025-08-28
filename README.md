@@ -133,9 +133,11 @@ AI_SMART_KIOSK/
 
 | 이름 | 역할 및 담당 |
 |------|-------------|
-| **개발팀** | 총괄 개발, 시스템 설계, AI 기능 구현 |
-| **기획팀** | 사용자 경험 설계, UI/UX 기획 |
-| **디자인팀** | 터치스크린 인터페이스 디자인, 시각적 요소 |
+| **정우영** | PM, Back-end, Front-end, 문서 관리 |
+| **김철용** | 자료 수집, Front-end, 음성 안내 |
+| **김민재** | 자료 수집, Front-end, 음성 안내, Database |
+| **이영빈** | Back-end, AWS Rekognition, Flask |
+| **김철용** | Presentation, Front-end, Design, PPT |
 
 ---
 
